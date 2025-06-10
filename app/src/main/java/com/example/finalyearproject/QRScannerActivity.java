@@ -1,3 +1,7 @@
+package com.example.finalyearproject;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 public class QRScannerActivity extends AppCompatActivity {
     private DecoratedBarcodeView barcodeScannerView;
     FirebaseAuth mAuth;

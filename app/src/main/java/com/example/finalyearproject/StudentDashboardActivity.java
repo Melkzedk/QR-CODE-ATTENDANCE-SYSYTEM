@@ -1,3 +1,7 @@
+package com.example.finalyearproject;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 public class StudentDashboardActivity extends AppCompatActivity {
     Spinner subjectSpinner;
     Button scanQRBtn;

@@ -1,5 +1,6 @@
 package com.example.finalyearproject;
 
+import android.content.Intent; // <-- missing import
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -27,6 +28,12 @@ public class LoginActivity extends AppCompatActivity {
         loginBtn.setOnClickListener(v -> {
             String reg = loginRegNumber.getText().toString().trim();
             String pass = loginPassword.getText().toString().trim();
+
+            if (reg.isEmpty() || pass.isEmpty()) {
+                Toast.makeText(this, "Please enter all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             String email = reg + "@qrcode.edu";
 
             mAuth.signInWithEmailAndPassword(email, pass)
@@ -34,8 +41,9 @@ public class LoginActivity extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(this, StudentDashboardActivity.class));
+                            finish();
                         } else {
-                            Toast.makeText(this, "Login failed", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
                     });
         });

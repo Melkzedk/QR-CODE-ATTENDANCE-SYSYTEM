@@ -59,7 +59,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Firebase and other dependencies
-    implementation("com.google.firebase:firebase-auth:22.3.0") // for auth
-    implementation("com.google.firebase:firebase-database:20.3.0") // for DB
-    implementation("com.journeyapps:zxing-android-embedded:4.3.0") // for QR scanning
+    implementation(libs.firebase.auth) // for auth
+    implementation(libs.firebase.database) // for DB
+    implementation(libs.zxing.android.embedded) // for QR scanning
 }

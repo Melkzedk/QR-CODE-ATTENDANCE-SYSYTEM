@@ -1,3 +1,9 @@
+package com.example.finalyearproject;
+
+import android.widget.EditText;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 public class RegisterActivity extends AppCompatActivity {
     EditText regNumberInput, passwordInput;
     Button registerBtn;
