@@ -25,7 +25,7 @@
             android:screenOrientation="portrait"
             tools:replace="screenOrientation" />
         <activity
-            android:name=".MainActivity"
+            android:name=".RegisterActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.FinalYearProject">
