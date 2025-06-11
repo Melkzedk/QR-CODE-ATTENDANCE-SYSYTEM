@@ -1,18 +1,60 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    tools:ignore="ExtraText">
+
+    <!-- Heading -->
+    <TextView
+        android:id="@+id/dashboardTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student Dashboard"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Attendance Info -->
+    <TextView
+        android:id="@+id/attendanceLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Your Attendance:"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- This TextView will be set dynamically -->
+    <TextView
+        android:id="@+id/attendanceValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="0%"
+        android:textSize="16sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Subject Selector -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Subject:"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
     <Spinner
         android:id="@+id/subjectSpinner"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:minHeight="48dp" />
 
+    <!-- Button to Scan QR -->
     <Button
         android:id="@+id/scanQRBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Scan QR" />
+        android:text="Make Attendance (Scan QR)" />
 </LinearLayout>

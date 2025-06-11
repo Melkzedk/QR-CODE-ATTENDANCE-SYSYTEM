@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -12,6 +13,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
     Spinner subjectSpinner;
     Button scanQRBtn;
     String selectedSubject;
+    TextView attendanceValue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,11 +22,18 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         subjectSpinner = findViewById(R.id.subjectSpinner);
         scanQRBtn = findViewById(R.id.scanQRBtn);
+        attendanceValue = findViewById(R.id.attendanceValue);
 
-        String[] subjects = {"Mathematics", "Science", "English"};
+        // Example subjects
+        String[] subjects = {"Math 101", "Python Programming", "Computer Networks"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, subjects);
         subjectSpinner.setAdapter(adapter);
 
+        // Example: Static attendance value (you can fetch this from DB or API)
+        String attendancePercentage = "85%";
+        attendanceValue.setText(attendancePercentage);
+
+        // QR Button click handler
         scanQRBtn.setOnClickListener(v -> {
             selectedSubject = subjectSpinner.getSelectedItem().toString();
             Intent intent = new Intent(this, QRScannerActivity.class);
