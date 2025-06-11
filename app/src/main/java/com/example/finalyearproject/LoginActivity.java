@@ -37,12 +37,21 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
+            // 🔒 Hardcoded Lecturer login for testing
+            if (reg.equalsIgnoreCase("lecturer") && pass.equals("Lecturer123")) {
+                Toast.makeText(this, "Lecturer login successful", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, LecturerDashboardActivity.class));
+                finish();
+                return;
+            }
+
+            // 🧑‍🎓 Normal Student login via Firebase
             String email = reg + "@qrcode.edu";
 
             mAuth.signInWithEmailAndPassword(email, pass)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Student login successful", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(this, StudentDashboardActivity.class));
                             finish();
                         } else {
