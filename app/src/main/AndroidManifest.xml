@@ -44,6 +44,10 @@
         <activity android:name=".MainActivity" />
         <activity android:name=".QRScannerActivity" />
         <activity android:name=".StudentDashboardActivity" />
+        <activity android:name=".LecturerDashboardActivity" />
+        <activity android:name=".AddCourseActivity" />
+        <activity android:name=".GenerateQRActivity" />
+        <activity android:name=".AttendanceReportActivity" />
 
     </application>
 
