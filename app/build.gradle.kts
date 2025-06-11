@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -66,4 +67,6 @@ dependencies {
     implementation(libs.firebase.auth) // for auth
     implementation(libs.firebase.database) // for DB
     implementation(libs.zxing.android.embedded) // for QR scanning
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0") // ✅ Correct for Kotlin DSL
+
 }
