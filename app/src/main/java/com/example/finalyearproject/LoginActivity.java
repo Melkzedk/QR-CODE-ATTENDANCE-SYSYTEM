@@ -1,9 +1,10 @@
 package com.example.finalyearproject;
 
-import android.content.Intent; // <-- missing import
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuth;
 public class LoginActivity extends AppCompatActivity {
     EditText loginRegNumber, loginPassword;
     Button loginBtn;
+    TextView registerRedirect;
     FirebaseAuth mAuth;
 
     @Override
@@ -23,6 +25,7 @@ public class LoginActivity extends AppCompatActivity {
         loginRegNumber = findViewById(R.id.loginRegNumber);
         loginPassword = findViewById(R.id.loginPassword);
         loginBtn = findViewById(R.id.loginBtn);
+        registerRedirect = findViewById(R.id.registerRedirect);
         mAuth = FirebaseAuth.getInstance();
 
         loginBtn.setOnClickListener(v -> {
@@ -46,6 +49,12 @@ public class LoginActivity extends AppCompatActivity {
                             Toast.makeText(this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
                     });
+        });
+
+        registerRedirect.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(intent);
+            finish();
         });
     }
 }
