@@ -1,5 +1,6 @@
 package com.example.finalyearproject;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Button;
@@ -10,7 +11,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,10 +20,10 @@ import java.util.Map;
 public class AddCourseActivity extends AppCompatActivity {
 
     private EditText courseCodeEditText, courseNameEditText;
-    private Button addCourseButton;
+    private Button addCourseButton, backToDashboardBtn;
 
-    private FirebaseFirestore db;
     private FirebaseAuth mAuth;
+    private DatabaseReference courseRef;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -31,9 +33,10 @@ public class AddCourseActivity extends AppCompatActivity {
         courseCodeEditText = findViewById(R.id.courseCodeEditText);
         courseNameEditText = findViewById(R.id.courseNameEditText);
         addCourseButton = findViewById(R.id.addCourseButton);
+        backToDashboardBtn = findViewById(R.id.backToDashboardBtn);
 
-        db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
+        courseRef = FirebaseDatabase.getInstance().getReference("courses");
 
         addCourseButton.setOnClickListener(v -> {
             String code = courseCodeEditText.getText().toString().trim();
@@ -45,16 +48,25 @@ public class AddCourseActivity extends AppCompatActivity {
             }
 
             String lecturerId = mAuth.getCurrentUser().getUid();
+            String courseId = courseRef.push().getKey();
+
             Map<String, Object> course = new HashMap<>();
+            course.put("courseId", courseId);
             course.put("courseCode", code);
             course.put("courseName", name);
             course.put("lecturerId", lecturerId);
 
-            db.collection("courses").add(course)
-                    .addOnSuccessListener(documentReference ->
+            assert courseId != null;
+            courseRef.child(courseId).setValue(course)
+                    .addOnSuccessListener(aVoid ->
                             Toast.makeText(this, "Course added successfully", Toast.LENGTH_SHORT).show())
                     .addOnFailureListener(e ->
                             Toast.makeText(this, "Failed to add course: " + e.getMessage(), Toast.LENGTH_LONG).show());
+        });
+
+        backToDashboardBtn.setOnClickListener(v -> {
+            startActivity(new Intent(this, LecturerDashboardActivity.class));
+            finish();
         });
     }
 }
