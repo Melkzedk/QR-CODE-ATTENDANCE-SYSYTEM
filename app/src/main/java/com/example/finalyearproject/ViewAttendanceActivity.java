@@ -5,6 +5,10 @@ import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.view.View;
+import android.widget.AdapterView;
+
+
 import com.google.firebase.database.*;
 
 import java.util.ArrayList;
