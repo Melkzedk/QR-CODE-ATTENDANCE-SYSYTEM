@@ -22,7 +22,8 @@ import java.util.ArrayList;
 public class StudentDashboardActivity extends AppCompatActivity {
 
     Spinner subjectSpinner;
-    Button scanQRBtn;
+    Button scanQRBtn, viewAttendanceHistoryBtn, viewAnnouncementsBtn,
+            downloadReportBtn, profileSettingsBtn, contactLecturerBtn;
     String selectedSubject;
     TextView attendanceValue;
 
@@ -40,6 +41,12 @@ public class StudentDashboardActivity extends AppCompatActivity {
         scanQRBtn = findViewById(R.id.scanQRBtn);
         attendanceValue = findViewById(R.id.attendanceValue);
 
+        viewAttendanceHistoryBtn = findViewById(R.id.viewAttendanceHistoryBtn);
+        viewAnnouncementsBtn = findViewById(R.id.viewAnnouncementsBtn);
+        downloadReportBtn = findViewById(R.id.downloadReportBtn);
+        profileSettingsBtn = findViewById(R.id.profileSettingsBtn);
+        contactLecturerBtn = findViewById(R.id.contactLecturerBtn);
+
         // Set static attendance value for now
         attendanceValue.setText("0%");
 
@@ -50,23 +57,48 @@ public class StudentDashboardActivity extends AppCompatActivity {
         // Firebase reference
         coursesRef = FirebaseDatabase.getInstance().getReference("courses");
 
-        // Fetch courses from Firebase
+        // Fetch courses
         fetchCourses();
 
-        // Scan QR Button
+        // Scan QR
         scanQRBtn.setOnClickListener(v -> {
             selectedSubject = subjectSpinner.getSelectedItem().toString();
             Intent intent = new Intent(this, QRScannerActivity.class);
             intent.putExtra("subject", selectedSubject);
             startActivity(intent);
         });
+
+        // View attendance history
+        viewAttendanceHistoryBtn.setOnClickListener(v ->
+                startActivity(new Intent(this, AttendanceHistoryActivity.class))
+        );
+
+        // View announcements
+        viewAnnouncementsBtn.setOnClickListener(v ->
+                startActivity(new Intent(this, AnnouncementsActivity.class))
+        );
+
+        // Download report
+        downloadReportBtn.setOnClickListener(v ->
+                startActivity(new Intent(this, DownloadReportActivity.class))
+        );
+
+        // Profile / settings
+        profileSettingsBtn.setOnClickListener(v ->
+                startActivity(new Intent(this, ProfileSettingsActivity.class))
+        );
+
+        // Contact lecturer
+        contactLecturerBtn.setOnClickListener(v ->
+                startActivity(new Intent(this, ContactLecturerActivity.class))
+        );
     }
 
     private void fetchCourses() {
         coursesRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                courseList.clear(); // Clear before adding fresh data
+                courseList.clear();
                 for (DataSnapshot courseSnapshot : snapshot.getChildren()) {
                     String courseCode = courseSnapshot.child("courseCode").getValue(String.class);
                     String courseName = courseSnapshot.child("courseName").getValue(String.class);
@@ -74,7 +106,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
                         courseList.add(courseCode + " - " + courseName);
                     }
                 }
-                adapter.notifyDataSetChanged(); // Refresh spinner
+                adapter.notifyDataSetChanged();
             }
 
             @Override

@@ -55,6 +55,11 @@
         <activity android:name=".ViewLecturersActivity"/>
         <activity android:name=".ViewAttendanceActivity" />
         <activity android:name=".ManageCoursesActivity" />
+        <activity android:name=".AnnouncementsActivity"/>
+        <activity android:name=".AttendanceHistoryActivity"/>
+        <activity android:name=".ContactLecturerActivity"/>
+        <activity android:name=".DownloadReportActivity"/>
+        <activity android:name=".ProfileSettingsActivity"/>
 
     </application>
 
