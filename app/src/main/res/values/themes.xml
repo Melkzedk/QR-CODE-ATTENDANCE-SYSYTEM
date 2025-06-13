@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.FinalYearProject" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- Add other theme attributes here if needed -->
+    <style name="Theme.FinalYearProject" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- You can add Material color overrides, typography, etc. -->
     </style>
 </resources>

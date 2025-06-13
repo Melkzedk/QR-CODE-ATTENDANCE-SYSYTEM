@@ -3,8 +3,8 @@ package com.example.finalyearproject;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 
 public class StudentDashboardActivity extends AppCompatActivity {
 
-    Spinner subjectSpinner;
+    AutoCompleteTextView subjectDropdown;
     Button scanQRBtn, viewAttendanceHistoryBtn, viewAnnouncementsBtn,
             downloadReportBtn, profileSettingsBtn, contactLecturerBtn;
     String selectedSubject;
@@ -37,7 +37,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_dashboard);
 
-        subjectSpinner = findViewById(R.id.subjectSpinner);
+        subjectDropdown = findViewById(R.id.subjectDropdown);  // Use the new ID
         scanQRBtn = findViewById(R.id.scanQRBtn);
         attendanceValue = findViewById(R.id.attendanceValue);
 
@@ -50,9 +50,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
         // Set static attendance value for now
         attendanceValue.setText("0%");
 
-        // Initialize adapter
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, courseList);
-        subjectSpinner.setAdapter(adapter);
+        // Initialize adapter for AutoCompleteTextView
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, courseList);
+        subjectDropdown.setAdapter(adapter);
 
         // Firebase reference
         coursesRef = FirebaseDatabase.getInstance().getReference("courses");
@@ -62,10 +62,14 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         // Scan QR
         scanQRBtn.setOnClickListener(v -> {
-            selectedSubject = subjectSpinner.getSelectedItem().toString();
-            Intent intent = new Intent(this, QRScannerActivity.class);
-            intent.putExtra("subject", selectedSubject);
-            startActivity(intent);
+            selectedSubject = subjectDropdown.getText().toString();
+            if (selectedSubject.isEmpty()) {
+                Toast.makeText(this, "Please select a subject", Toast.LENGTH_SHORT).show();
+            } else {
+                Intent intent = new Intent(this, QRScannerActivity.class);
+                intent.putExtra("subject", selectedSubject);
+                startActivity(intent);
+            }
         });
 
         // View attendance history

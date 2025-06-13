@@ -68,5 +68,5 @@ dependencies {
     implementation(libs.firebase.database) // for DB
     implementation(libs.zxing.android.embedded) // for QR scanning
     implementation("com.journeyapps:zxing-android-embedded:4.3.0") // ✅ Correct for Kotlin DSL
-
+    implementation("com.google.android.material:material:1.6.0")
 }
