@@ -9,11 +9,27 @@
         android:id="@+id/btnAddStudent"
         android:text="Add Student"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp" />
 
     <Button
         android:id="@+id/btnAddLecturer"
         android:text="Add Lecturer"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnViewStudents"
+        android:text="View Students"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnViewLecturers"
+        android:text="View Lecturers"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content" />
+
 </LinearLayout>

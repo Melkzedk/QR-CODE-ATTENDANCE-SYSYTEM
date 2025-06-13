@@ -51,6 +51,8 @@
         <activity android:name=".AdminDashboardActivity" />
         <activity android:name=".AddStudentActivity" />
         <activity android:name=".AddLecturerActivity" />
+        <activity android:name=".ViewStudentsActivity"/>
+        <activity android:name=".ViewLecturersActivity"/>
 
     </application>
 
