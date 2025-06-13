@@ -53,6 +53,8 @@
         <activity android:name=".AddLecturerActivity" />
         <activity android:name=".ViewStudentsActivity"/>
         <activity android:name=".ViewLecturersActivity"/>
+        <activity android:name=".ViewAttendanceActivity" />
+        <activity android:name=".ManageCoursesActivity" />
 
     </application>
 
