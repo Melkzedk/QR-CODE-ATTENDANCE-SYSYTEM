@@ -37,7 +37,15 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // 🔒 Hardcoded Lecturer login for testing
+            // ✅ Admin Login (hardcoded)
+            if (reg.equalsIgnoreCase("admin") && pass.equals("admin123")) {
+                Toast.makeText(this, "Admin login successful", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, AdminDashboardActivity.class));
+                finish();
+                return;
+            }
+
+            // ✅ Lecturer Login (hardcoded)
             if (reg.equalsIgnoreCase("lecturer") && pass.equals("Lecturer123")) {
                 Toast.makeText(this, "Lecturer login successful", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, LecturerDashboardActivity.class));
@@ -45,8 +53,8 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // 🧑‍🎓 Normal Student login via Firebase
-            String email = reg + "@qrcode.edu";
+            // ✅ Student Login (via Firebase)
+            String email = reg + "@qrcode.edu"; // using regNumber as email format
 
             mAuth.signInWithEmailAndPassword(email, pass)
                     .addOnCompleteListener(task -> {

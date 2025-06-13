@@ -48,6 +48,9 @@
         <activity android:name=".AddCourseActivity" />
         <activity android:name=".GenerateQRActivity" />
         <activity android:name=".AttendanceReportActivity" />
+        <activity android:name=".AdminDashboardActivity" />
+        <activity android:name=".AddStudentActivity" />
+        <activity android:name=".AddLecturerActivity" />
 
     </application>
 
