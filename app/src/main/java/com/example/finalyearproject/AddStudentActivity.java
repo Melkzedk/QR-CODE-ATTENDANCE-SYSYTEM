@@ -11,7 +11,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 public class AddStudentActivity extends AppCompatActivity {
 
-    EditText studentName, regNumber;
+    EditText studentName, regNumber, studentEmail, studentDepartment, studentCourse;
     Button addStudentBtn;
     DatabaseReference studentsRef;
 
@@ -22,28 +22,41 @@ public class AddStudentActivity extends AppCompatActivity {
 
         studentName = findViewById(R.id.studentName);
         regNumber = findViewById(R.id.regNumber);
+        studentEmail = findViewById(R.id.studentEmail);
+        studentDepartment = findViewById(R.id.studentDepartment);
+        studentCourse = findViewById(R.id.studentCourse);
         addStudentBtn = findViewById(R.id.addStudentBtn);
 
         studentsRef = FirebaseDatabase.getInstance().getReference("Users/Students");
 
         addStudentBtn.setOnClickListener(v -> {
-            String name = studentName.getText().toString();
-            String reg = regNumber.getText().toString();
+            String name = studentName.getText().toString().trim();
+            String reg = regNumber.getText().toString().trim();
+            String email = studentEmail.getText().toString().trim();
+            String dept = studentDepartment.getText().toString().trim();
+            String course = studentCourse.getText().toString().trim();
 
-            if (TextUtils.isEmpty(name) || TextUtils.isEmpty(reg)) {
+            if (TextUtils.isEmpty(name) || TextUtils.isEmpty(reg) || TextUtils.isEmpty(email)
+                    || TextUtils.isEmpty(dept) || TextUtils.isEmpty(course)) {
                 Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
-            } else {
-                String studentId = studentsRef.push().getKey();
-                Student student = new Student(studentId, name, reg);
-                studentsRef.child(studentId).setValue(student)
-                        .addOnCompleteListener(task -> {
-                            if (task.isSuccessful()) {
-                                Toast.makeText(this, "Student added", Toast.LENGTH_SHORT).show();
-                                studentName.setText("");
-                                regNumber.setText("");
-                            }
-                        });
+                return;
             }
+
+            String studentId = studentsRef.push().getKey();
+            Student student = new Student(studentId, name, reg, email, dept, course);
+            studentsRef.child(studentId).setValue(student)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(this, "Student added successfully", Toast.LENGTH_SHORT).show();
+                            studentName.setText("");
+                            regNumber.setText("");
+                            studentEmail.setText("");
+                            studentDepartment.setText("");
+                            studentCourse.setText("");
+                        } else {
+                            Toast.makeText(this, "Failed to add student", Toast.LENGTH_SHORT).show();
+                        }
+                    });
         });
     }
 }
