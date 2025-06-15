@@ -12,7 +12,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
@@ -28,7 +30,7 @@ public class GenerateQRActivity extends AppCompatActivity {
     private ImageView qrImageView;
 
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private DatabaseReference dbRef;
 
     private ArrayList<String> courseList = new ArrayList<>();
     private Map<String, String> courseCodeMap = new HashMap<>();
@@ -43,9 +45,9 @@ public class GenerateQRActivity extends AppCompatActivity {
         qrImageView = findViewById(R.id.qrImageView);
 
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        dbRef = FirebaseDatabase.getInstance().getReference("courses");
 
-        generateQRButton.setEnabled(false); // Disable button until data loads
+        generateQRButton.setEnabled(false);
 
         loadCourses();
 
@@ -55,8 +57,8 @@ public class GenerateQRActivity extends AppCompatActivity {
                 return;
             }
 
-            String selectedCourse = courseSpinner.getSelectedItem().toString();
-            String courseCode = courseCodeMap.get(selectedCourse);
+            String selectedDisplayName = courseSpinner.getSelectedItem().toString();
+            String courseCode = courseCodeMap.get(selectedDisplayName);
 
             if (courseCode == null) {
                 Toast.makeText(this, "Invalid course selected", Toast.LENGTH_SHORT).show();
@@ -71,16 +73,22 @@ public class GenerateQRActivity extends AppCompatActivity {
                 Bitmap bitmap = encoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 400, 400);
                 qrImageView.setImageBitmap(bitmap);
 
+                // Save session (optional - you can adjust this to Firestore if needed)
+                DatabaseReference sessionRef = FirebaseDatabase.getInstance().getReference("attendance_sessions");
+                String sessionId = sessionRef.push().getKey();
+
                 Map<String, Object> data = new HashMap<>();
                 data.put("courseCode", courseCode);
                 data.put("timestamp", timestamp);
                 data.put("lecturerId", mAuth.getCurrentUser().getUid());
 
-                db.collection("attendance_sessions").add(data)
-                        .addOnSuccessListener(docRef ->
-                                Toast.makeText(this, "QR data saved", Toast.LENGTH_SHORT).show())
-                        .addOnFailureListener(e ->
-                                Toast.makeText(this, "Failed to save QR data", Toast.LENGTH_SHORT).show());
+                if (sessionId != null) {
+                    sessionRef.child(sessionId).setValue(data)
+                            .addOnSuccessListener(aVoid ->
+                                    Toast.makeText(this, "QR data saved", Toast.LENGTH_SHORT).show())
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Failed to save QR data", Toast.LENGTH_SHORT).show());
+                }
 
             } catch (WriterException e) {
                 Toast.makeText(this, "QR Generation failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -89,34 +97,36 @@ public class GenerateQRActivity extends AppCompatActivity {
     }
 
     private void loadCourses() {
-        String lecturerId = mAuth.getCurrentUser().getUid();
+        dbRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DataSnapshot snapshot = task.getResult();
 
-        db.collection("courses")
-                .whereEqualTo("lecturerId", lecturerId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    for (var doc : queryDocumentSnapshots) {
-                        String name = doc.getString("courseName");
-                        String code = doc.getString("courseCode");
+                courseList.clear();
+                courseCodeMap.clear();
 
-                        if (name != null && code != null) {
-                            courseList.add(name);
-                            courseCodeMap.put(name, code);
-                        }
+                for (DataSnapshot courseSnap : snapshot.getChildren()) {
+                    String name = courseSnap.child("courseName").getValue(String.class);
+                    String code = courseSnap.child("courseCode").getValue(String.class);
+
+                    if (name != null && code != null) {
+                        String displayName = code + " - " + name;
+                        courseList.add(displayName);
+                        courseCodeMap.put(displayName, code);
                     }
+                }
 
-                    if (courseList.isEmpty()) {
-                        Toast.makeText(this, "No courses found for you", Toast.LENGTH_SHORT).show();
-                    } else {
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                                android.R.layout.simple_spinner_item, courseList);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        courseSpinner.setAdapter(adapter);
-                        generateQRButton.setEnabled(true);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to load courses: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                if (courseList.isEmpty()) {
+                    Toast.makeText(this, "No courses found", Toast.LENGTH_SHORT).show();
+                } else {
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                            android.R.layout.simple_spinner_item, courseList);
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    courseSpinner.setAdapter(adapter);
+                    generateQRButton.setEnabled(true);
+                }
+            } else {
+                Toast.makeText(this, "Failed to load courses", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }
