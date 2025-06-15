@@ -55,6 +55,16 @@
                         android:layout_height="wrap_content"
                         android:hint="Select Subject" />
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Submit Button -->
+                <Button
+                    android:id="@+id/btnSubmitSubject"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Check Attendance"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="16dp" />
+
             </LinearLayout>
         </ScrollView>
     </LinearLayout>
