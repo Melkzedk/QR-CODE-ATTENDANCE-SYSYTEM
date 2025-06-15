@@ -1,7 +1,7 @@
 package com.example.finalyearproject;
 
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,8 +19,9 @@ import java.util.List;
 public class StudentAdapter extends ArrayAdapter<Student> {
     private Context context;
     private List<Student> students;
-    private DatabaseReference studentsRef;
+    private DatabaseReference studentsRef;  // Added ref
 
+    // Constructor updated to accept DatabaseReference
     public StudentAdapter(Context context, List<Student> students, DatabaseReference studentsRef) {
         super(context, 0, students);
         this.context = context;
@@ -45,40 +46,41 @@ public class StudentAdapter extends ArrayAdapter<Student> {
         textName.setText(student.getName());
 
         btnEdit.setOnClickListener(v -> {
-            Intent intent = new Intent(context, EditStudentActivity.class);
-            intent.putExtra("studentKey", student.getKey());
-            intent.putExtra("name", student.getName());
-            intent.putExtra("regNumber", student.getRegNumber());
-            intent.putExtra("email", student.getEmail());
-            intent.putExtra("department", student.getDepartment());
-            intent.putExtra("course", student.getCourse());
-            context.startActivity(intent);
+            // Handle edit logic (launch EditStudentActivity)
+            Toast.makeText(context, "Edit " + student.getName(), Toast.LENGTH_SHORT).show();
+            // You would use an Intent here
         });
 
-        btnDelete.setOnClickListener(v -> {
-            if (student.getKey() != null) {
-                studentsRef.child(student.getKey()).removeValue()
-                        .addOnSuccessListener(aVoid ->
-                                Toast.makeText(context, "Deleted " + student.getName(), Toast.LENGTH_SHORT).show())
-                        .addOnFailureListener(e ->
-                                Toast.makeText(context, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-            } else {
-                Toast.makeText(context, "Student key is missing!", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        btnDeactivate.setOnClickListener(v -> {
-            if (student.getKey() != null) {
-                studentsRef.child(student.getKey()).child("status").setValue("deactivated")
-                        .addOnSuccessListener(aVoid ->
-                                Toast.makeText(context, "Deactivated " + student.getName(), Toast.LENGTH_SHORT).show())
-                        .addOnFailureListener(e ->
-                                Toast.makeText(context, "Deactivate failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-            } else {
-                Toast.makeText(context, "Student key is missing!", Toast.LENGTH_SHORT).show();
-            }
-        });
+        btnDelete.setOnClickListener(v -> showConfirmDialog("Delete", student));
+        btnDeactivate.setOnClickListener(v -> showConfirmDialog("Deactivate", student));
 
         return convertView;
+    }
+
+    private void showConfirmDialog(String action, Student student) {
+        new AlertDialog.Builder(context)
+                .setTitle(action + " Student")
+                .setMessage("Do you want to " + action.toLowerCase() + " " + student.getName() + "?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    if (action.equals("Delete")) {
+                        deleteStudent(student);
+                    } else if (action.equals("Deactivate")) {
+                        deactivateStudent(student);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deleteStudent(Student student) {
+        studentsRef.child(student.getKey()).removeValue()
+                .addOnSuccessListener(aVoid -> Toast.makeText(context, "Student deleted", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e -> Toast.makeText(context, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void deactivateStudent(Student student) {
+        studentsRef.child(student.getKey()).child("status").setValue("deactivated")
+                .addOnSuccessListener(aVoid -> Toast.makeText(context, "Student deactivated", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e -> Toast.makeText(context, "Deactivate failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 }
