@@ -78,6 +78,7 @@
         <activity android:name=".ProfileSettingsActivity"/>
         <activity android:name=".EditStudentActivity"/>
 
+        <activity android:name=".SendMessageActivity"/>
     </application>
 
 </manifest>

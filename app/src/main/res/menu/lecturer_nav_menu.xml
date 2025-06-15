@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/nav_add_course" android:title="Add Course" android:icon="@drawable/add_24px" />
+    <item android:id="@+id/nav_manage_course" android:title="Manage Courses" android:icon="@drawable/manage_accounts_24px" />
+    <item android:id="@+id/nav_mark_attendance" android:title="Mark Attendance" android:icon="@drawable/qr_code_scanner_24px" />
+    <item android:id="@+id/nav_view_attendance" android:title="View Attendance Records" android:icon="@drawable/menu_24px" />
+    <item android:id="@+id/nav_generate_report" android:title="Generate Attendance Report" android:icon="@drawable/manage_accounts_24px" />
+    <item android:id="@+id/nav_send_message" android:title="Send Message" android:icon="@drawable/send_24px" />
+    <item android:id="@+id/nav_view_messages" android:title="View Messages" android:icon="@drawable/mail_24px" />
+    <item android:id="@+id/nav_logout" android:title="Logout" android:icon="@drawable/logout" />
+</menu>
