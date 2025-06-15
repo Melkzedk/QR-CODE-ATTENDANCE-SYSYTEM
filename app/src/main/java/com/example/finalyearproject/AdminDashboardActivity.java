@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class AdminDashboardActivity extends AppCompatActivity {
 
-    Button btnAddStudent, btnAddLecturer, btnViewStudents, btnViewLecturers;
+    Button btnAddStudent, btnAddLecturer, btnViewStudents, btnViewLecturers, btnCreateTimetable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,6 +19,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
         btnAddLecturer = findViewById(R.id.btnAddLecturer);
         btnViewStudents = findViewById(R.id.btnViewStudents);
         btnViewLecturers = findViewById(R.id.btnViewLecturers);
+        btnCreateTimetable = findViewById(R.id.btnCreateTimetable); // New button
 
         btnAddStudent.setOnClickListener(v ->
                 startActivity(new Intent(this, AddStudentActivity.class)));
@@ -31,5 +32,8 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
         btnViewLecturers.setOnClickListener(v ->
                 startActivity(new Intent(this, ViewLecturersActivity.class)));
+
+        btnCreateTimetable.setOnClickListener(v ->
+                startActivity(new Intent(this, TimetableActivity.class))); // New intent
     }
 }

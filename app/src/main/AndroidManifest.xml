@@ -77,8 +77,9 @@
         <activity android:name=".DownloadReportActivity"/>
         <activity android:name=".ProfileSettingsActivity"/>
         <activity android:name=".EditStudentActivity"/>
-
+        <activity android:name=".ViewTimetableActivity" />
         <activity android:name=".SendMessageActivity"/>
+        <activity android:name=".TimetableActivity"/>
     </application>
 
 </manifest>

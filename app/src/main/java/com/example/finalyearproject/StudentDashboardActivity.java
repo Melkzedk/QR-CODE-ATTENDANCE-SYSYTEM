@@ -105,7 +105,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
                         if (courseCode != null && courseName != null) {
                             String display = courseCode + " - " + courseName;
                             courseDisplayList.add(display);
-                            displayToCodeMap.put(display, courseCode);  // map display name to real courseCode
+                            displayToCodeMap.put(display, courseCode);
                         }
                     }
                     adapter.notifyDataSetChanged();
@@ -122,7 +122,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
     private void fetchAttendancePercentage(String courseCode) {
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        // Count the number of sessions attended by the student
         attendanceRef.child(courseCode).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -178,7 +177,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 } else if (itemId == R.id.nav_contact) {
                     startActivity(new Intent(this, ContactLecturerActivity.class));
                 } else if (itemId == R.id.nav_timetable) {
-                    startActivity(new Intent(this, TimetableActivity.class));
+                    startActivity(new Intent(this, ViewTimetableActivity.class)); // ✅ Updated to student version
                 } else if (itemId == R.id.nav_logout) {
                     FirebaseAuth.getInstance().signOut();
                     startActivity(new Intent(this, LoginActivity.class));

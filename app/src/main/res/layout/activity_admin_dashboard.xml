@@ -30,6 +30,12 @@
         android:id="@+id/btnViewLecturers"
         android:text="View Lecturers"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp" />
 
+    <Button
+        android:id="@+id/btnCreateTimetable"
+        android:text="Create Timetable"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 </LinearLayout>
