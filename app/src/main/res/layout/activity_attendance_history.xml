@@ -13,6 +13,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <Spinner
+        android:id="@+id/courseFilterSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp" />
+
     <ListView
         android:id="@+id/attendanceHistoryListView"
         android:layout_width="match_parent"
