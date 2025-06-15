@@ -1,106 +1,69 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Main content -->
     <LinearLayout
         android:orientation="vertical"
-        android:padding="16dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
-        <!-- Heading -->
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/dashboardTitle"
+        <!-- Toolbar -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Student Dashboard"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginBottom="24dp" />
+            android:background="?attr/colorPrimary"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            android:title="Student Dashboard" />
 
-        <!-- Attendance Info -->
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/attendanceLabel"
+        <!-- Scrollable Main Area -->
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Your Attendance:"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_height="match_parent">
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/attendanceValue"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="0%"
-            android:textSize="16sp"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Subject Selector with Exposed Dropdown -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:endIconMode="dropdown_menu">
-
-            <AutoCompleteTextView
-                android:id="@+id/subjectDropdown"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Select Subject" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <!-- Buttons -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/scanQRBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Make Attendance (Scan QR)"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_marginBottom="12dp" />
+                <!-- Attendance Percentage -->
+                <TextView
+                    android:id="@+id/attendanceValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0%"
+                    android:textSize="48sp"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="32dp"
+                    android:textStyle="bold" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/viewAttendanceHistoryBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="View Attendance History"
-            android:layout_marginBottom="12dp" />
+                <!-- Subject Dropdown -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    app:endIconMode="dropdown_menu">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/viewAnnouncementsBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="View Announcements"
-            android:layout_marginBottom="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/downloadReportBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Download Attendance Report"
-            android:layout_marginBottom="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/profileSettingsBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Profile / Settings"
-            android:layout_marginBottom="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/contactLecturerBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Contact Lecturer"
-            android:layout_marginBottom="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/viewTimetableBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="View Timetable (Optional)" />
-
+                    <AutoCompleteTextView
+                        android:id="@+id/subjectDropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Select Subject" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </ScrollView>
     </LinearLayout>
-</ScrollView>
+
+    <!-- Side Navigation Drawer -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigation_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:menu="@menu/student_nav_menu" />
+</androidx.drawerlayout.widget.DrawerLayout>

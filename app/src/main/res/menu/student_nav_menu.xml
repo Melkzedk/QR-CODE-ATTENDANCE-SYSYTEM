@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/nav_scan_qr" android:title="Make Attendance" android:icon="@drawable/qr_code_scanner_24px" />
+    <item android:id="@+id/nav_attendance_history" android:title="View Attendance History" android:icon="@drawable/history_24px" />
+    <item android:id="@+id/nav_announcements" android:title="View Announcements" android:icon="@drawable/info_24px" />
+    <item android:id="@+id/nav_download_report" android:title="Download Attendance Report" android:icon="@drawable/download_24px" />
+    <item android:id="@+id/nav_profile" android:title="Profile / Settings" android:icon="@drawable/account_circle_24px" />
+    <item android:id="@+id/nav_contact" android:title="Contact Lecturer" android:icon="@drawable/mail_24px" />
+    <item android:id="@+id/nav_timetable" android:title="View Timetable (Optional)" android:icon="@drawable/event_24px" />
+    <item android:id="@+id/nav_logout" android:title="Logout" android:icon="@drawable/logout" />
+</menu>
