@@ -15,7 +15,7 @@ import com.google.firebase.database.*;
 
 public class ProfileSettingsActivity extends AppCompatActivity {
 
-    private EditText nameEditText, regNoEditText, emailEditText, passwordEditText, phoneEditText;
+    private EditText nameEditText, regNoEditText, emailEditText, phoneEditText;
     private Button updateButton;
 
     private FirebaseAuth mAuth;
@@ -29,7 +29,6 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         nameEditText = findViewById(R.id.nameEditText);
         regNoEditText = findViewById(R.id.regNoEditText);
         emailEditText = findViewById(R.id.emailEditText);
-        passwordEditText = findViewById(R.id.passwordEditText);
         phoneEditText = findViewById(R.id.phoneEditText);
         updateButton = findViewById(R.id.updateButton);
 
@@ -58,7 +57,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
                     String name = snapshot.child("name").getValue(String.class);
                     String regNo = snapshot.child("regNumber").getValue(String.class);
                     String phone = snapshot.child("phone").getValue(String.class);
-                    String email = currentUser.getEmail();
+                    String email = snapshot.child("email").getValue(String.class); // Get from DB
 
                     nameEditText.setText(name != null ? name : "");
                     regNoEditText.setText(regNo != null ? regNo : "");
@@ -78,11 +77,10 @@ public class ProfileSettingsActivity extends AppCompatActivity {
 
     private void updateProfile() {
         String newEmail = emailEditText.getText().toString().trim();
-        String newPassword = passwordEditText.getText().toString().trim();
         String newPhone = phoneEditText.getText().toString().trim();
 
-        if (TextUtils.isEmpty(newEmail) || TextUtils.isEmpty(newPassword)) {
-            Toast.makeText(this, "Email and password cannot be empty", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(newEmail)) {
+            Toast.makeText(this, "Email cannot be empty", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -92,32 +90,18 @@ public class ProfileSettingsActivity extends AppCompatActivity {
             return;
         }
 
-        // Update email
+        String uid = user.getUid();
+
+        // Update phone and email in Realtime Database
+        usersRef.child(uid).child("phone").setValue(newPhone);
+        usersRef.child(uid).child("email").setValue(newEmail);
+
+        // Try updating Firebase Auth email (may fail without recent login)
         user.updateEmail(newEmail).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                Toast.makeText(this, "Email updated", Toast.LENGTH_SHORT).show();
-
-                // Update password
-                user.updatePassword(newPassword).addOnCompleteListener(task2 -> {
-                    if (task2.isSuccessful()) {
-                        Toast.makeText(this, "Password updated", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(this, "Password update failed", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
+                Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Email update failed", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        // Update phone in Realtime Database
-        String uid = user.getUid();
-        usersRef.child(uid).child("phone").setValue(newPhone).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                Toast.makeText(this, "Phone updated", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Failed to update phone", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Profile saved. Please re-login to fully update your email.", Toast.LENGTH_LONG).show();
             }
         });
     }
