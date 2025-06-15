@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="180dp"
+    android:orientation="vertical"
+    android:gravity="bottom"
+    android:padding="16dp"
+    android:background="@color/colorPrimaryDark">
+
+    <ImageView
+        android:id="@+id/profileImage"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:src="@drawable/account_circle_24px"
+        android:layout_gravity="start"
+        android:scaleType="centerCrop"
+        android:background="@drawable/circle_bg"
+        android:contentDescription="Profile picture" />
+
+    <TextView
+        android:id="@+id/profileName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Student Name"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/profileEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="student@email.com"
+        android:textColor="@android:color/white"
+        android:textSize="14sp" />
+</LinearLayout>

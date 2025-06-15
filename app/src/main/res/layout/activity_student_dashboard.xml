@@ -59,11 +59,12 @@
         </ScrollView>
     </LinearLayout>
 
-    <!-- Side Navigation Drawer -->
+    <!-- Navigation Drawer with Profile Header -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigation_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        app:menu="@menu/student_nav_menu" />
+        app:menu="@menu/student_nav_menu"
+        app:headerLayout="@layout/nav_header_student" />
 </androidx.drawerlayout.widget.DrawerLayout>

@@ -2,8 +2,10 @@ package com.example.finalyearproject;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,6 +70,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
         coursesRef = FirebaseDatabase.getInstance().getReference("courses");
         fetchCourses();
 
+        // Handle navigation drawer item clicks
         if (navigationView != null) {
             navigationView.setNavigationItemSelectedListener(item -> {
                 int itemId = item.getItemId();
@@ -105,6 +108,19 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
                 return true;
             });
+
+            // Setup profile in header
+            View headerView = navigationView.getHeaderView(0);
+            TextView profileName = headerView.findViewById(R.id.profileName);
+            TextView profileEmail = headerView.findViewById(R.id.profileEmail);
+            ImageView profileImage = headerView.findViewById(R.id.profileImage);
+
+            profileEmail.setText(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+            profileName.setText("Student Name"); // Optionally fetch from DB
+
+            profileImage.setOnClickListener(v ->
+                    Toast.makeText(this, "Image picker not yet implemented", Toast.LENGTH_SHORT).show()
+            );
         }
     }
 
