@@ -25,13 +25,16 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class StudentDashboardActivity extends AppCompatActivity {
 
     AutoCompleteTextView subjectDropdown;
     TextView attendanceValue;
     Button btnSubmitSubject;
-    ArrayList<String> courseList = new ArrayList<>();
+    ArrayList<String> courseDisplayList = new ArrayList<>();
+    Map<String, String> displayToCodeMap = new HashMap<>();
     ArrayAdapter<String> adapter;
     DatabaseReference coursesRef, attendanceRef;
     DrawerLayout drawerLayout;
@@ -66,21 +69,21 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         attendanceValue.setText("0%");
 
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, courseList);
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, courseDisplayList);
         subjectDropdown.setAdapter(adapter);
 
         coursesRef = FirebaseDatabase.getInstance().getReference("courses");
-        attendanceRef = FirebaseDatabase.getInstance().getReference("attendance");
+        attendanceRef = FirebaseDatabase.getInstance().getReference("Attendance");
 
         fetchCourses();
 
         btnSubmitSubject.setOnClickListener(v -> {
-            String selected = subjectDropdown.getText().toString().trim();
-            if (selected.isEmpty()) {
-                Toast.makeText(this, "Please select a subject", Toast.LENGTH_SHORT).show();
+            String selectedDisplay = subjectDropdown.getText().toString().trim();
+            if (!displayToCodeMap.containsKey(selectedDisplay)) {
+                Toast.makeText(this, "Please select a valid subject", Toast.LENGTH_SHORT).show();
                 return;
             }
-            String courseCode = selected.split(" - ")[0].trim();
+            String courseCode = displayToCodeMap.get(selectedDisplay);
             fetchAttendancePercentage(courseCode);
         });
 
@@ -92,12 +95,17 @@ public class StudentDashboardActivity extends AppCompatActivity {
             coursesRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    courseList.clear();
+                    courseDisplayList.clear();
+                    displayToCodeMap.clear();
+
                     for (DataSnapshot courseSnapshot : snapshot.getChildren()) {
                         String courseCode = courseSnapshot.child("courseCode").getValue(String.class);
                         String courseName = courseSnapshot.child("courseName").getValue(String.class);
+
                         if (courseCode != null && courseName != null) {
-                            courseList.add(courseCode + " - " + courseName);
+                            String display = courseCode + " - " + courseName;
+                            courseDisplayList.add(display);
+                            displayToCodeMap.put(display, courseCode);  // map display name to real courseCode
                         }
                     }
                     adapter.notifyDataSetChanged();
@@ -113,27 +121,29 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
     private void fetchAttendancePercentage(String courseCode) {
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        attendanceRef.child(courseCode).child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
+
+        // Count the number of sessions attended by the student
+        attendanceRef.child(courseCode).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                long attended = snapshot.getChildrenCount();
-                attendanceRef.child(courseCode).child("sessions").addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot sessionSnap) {
-                        long totalSessions = sessionSnap.getChildrenCount();
-                        if (totalSessions == 0) {
-                            attendanceValue.setText("0%");
-                        } else {
-                            long percent = (attended * 100) / totalSessions;
-                            attendanceValue.setText(percent + "%");
+                long attended = 0;
+                long totalSessions = snapshot.getChildrenCount();
+
+                for (DataSnapshot sessionSnapshot : snapshot.getChildren()) {
+                    if (sessionSnapshot.hasChild(uid)) {
+                        Boolean isPresent = sessionSnapshot.child(uid).getValue(Boolean.class);
+                        if (Boolean.TRUE.equals(isPresent)) {
+                            attended++;
                         }
                     }
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(StudentDashboardActivity.this, "Failed to fetch sessions", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                if (totalSessions == 0) {
+                    attendanceValue.setText("0%");
+                } else {
+                    long percent = (attended * 100) / totalSessions;
+                    attendanceValue.setText(percent + "%");
+                }
             }
 
             @Override
