@@ -42,6 +42,8 @@ public class LecturerDashboardActivity extends AppCompatActivity {
                 startActivity(new Intent(this, AddCourseActivity.class));
             } else if (id == R.id.nav_manage_course) {
                 startActivity(new Intent(this, ManageCoursesActivity.class));
+            } else if (id == R.id.nav_view_timetable) { // ✅ Handle View Timetable
+                startActivity(new Intent(this, ViewTimetableActivity.class));
             } else if (id == R.id.nav_mark_attendance) {
                 startActivity(new Intent(this, GenerateQRActivity.class));
             } else if (id == R.id.nav_view_attendance) {
