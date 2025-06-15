@@ -47,8 +47,13 @@ public class AddCourseActivity extends AppCompatActivity {
                 return;
             }
 
-            String lecturerId = mAuth.getCurrentUser().getUid();
             String courseId = courseRef.push().getKey();
+            if (courseId == null) {
+                Toast.makeText(this, "Failed to generate course ID", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String lecturerId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : "unknown";
 
             Map<String, Object> course = new HashMap<>();
             course.put("courseId", courseId);
@@ -56,10 +61,12 @@ public class AddCourseActivity extends AppCompatActivity {
             course.put("courseName", name);
             course.put("lecturerId", lecturerId);
 
-            assert courseId != null;
             courseRef.child(courseId).setValue(course)
-                    .addOnSuccessListener(aVoid ->
-                            Toast.makeText(this, "Course added successfully", Toast.LENGTH_SHORT).show())
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(this, "Course added successfully", Toast.LENGTH_SHORT).show();
+                        setResult(RESULT_OK);  // Notify ManageCoursesActivity
+                        finish();              // Close and go back
+                    })
                     .addOnFailureListener(e ->
                             Toast.makeText(this, "Failed to add course: " + e.getMessage(), Toast.LENGTH_LONG).show());
         });
