@@ -24,6 +24,10 @@
             android:layout_height="wrap_content"
             android:hint="Student Registration Number (Leave empty for all)"
             android:inputType="text"
+            android:textColor="#000000"
+            android:textColorHint="#888888"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
             android:layout_marginBottom="12dp" />
 
         <EditText
@@ -32,6 +36,10 @@
             android:layout_height="wrap_content"
             android:hint="Message Title"
             android:inputType="text"
+            android:textColor="#000000"
+            android:textColorHint="#888888"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
             android:layout_marginBottom="12dp" />
 
         <EditText
@@ -40,8 +48,11 @@
             android:layout_height="150dp"
             android:hint="Message Body"
             android:inputType="textMultiLine"
-            android:gravity="top"
-            android:background="@android:drawable/editbox_background_normal"
+            android:gravity="top|start"
+            android:textColor="#000000"
+            android:textColorHint="#888888"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
             android:layout_marginBottom="24dp" />
 
         <Button
