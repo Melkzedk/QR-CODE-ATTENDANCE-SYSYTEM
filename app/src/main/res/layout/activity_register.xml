@@ -18,6 +18,60 @@
         android:layout_gravity="center"
         android:layout_marginBottom="24dp" />
 
+    <!-- Name -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/nameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Name"
+            android:textColor="#000000"
+            android:textColorHint="#888888"
+            android:backgroundTint="#DDDDDD"
+            android:padding="12dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Email -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/emailInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Email"
+            android:inputType="textEmailAddress"
+            android:textColor="#000000"
+            android:textColorHint="#888888"
+            android:backgroundTint="#DDDDDD"
+            android:padding="12dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Phone Number -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/phoneInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Phone Number"
+            android:inputType="phone"
+            android:textColor="#000000"
+            android:textColorHint="#888888"
+            android:backgroundTint="#DDDDDD"
+            android:padding="12dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Reg Number -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -34,6 +88,7 @@
             android:padding="12dp" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Password -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -76,4 +131,5 @@
         android:layout_gravity="center"
         android:clickable="true"
         android:focusable="true" />
+
 </LinearLayout>
