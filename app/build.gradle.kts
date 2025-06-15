@@ -70,5 +70,7 @@ dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0") // ✅ Correct for Kotlin DSL
     implementation("com.google.android.material:material:1.6.0")
     implementation("com.github.SUPERCILEX:poi-android:3.17")
+    implementation ("androidx.work:work-runtime:2.9.0")
+    implementation ("com.google.guava:guava:31.1-android")
 
 }

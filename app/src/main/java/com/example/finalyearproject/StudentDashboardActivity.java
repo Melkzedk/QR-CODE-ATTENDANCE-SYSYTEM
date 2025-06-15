@@ -1,6 +1,9 @@
 package com.example.finalyearproject;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -10,10 +13,15 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.navigation.NavigationView;
@@ -30,6 +38,8 @@ import java.util.Map;
 
 public class StudentDashboardActivity extends AppCompatActivity {
 
+    private static final int REQUEST_NOTIFICATION_PERMISSION = 1001;
+
     AutoCompleteTextView subjectDropdown;
     TextView attendanceValue;
     Button btnSubmitSubject;
@@ -45,6 +55,28 @@ public class StudentDashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_dashboard);
+
+        // 🔔 Notification Channel for Class Reminders
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    "class_channel", "Class Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+
+        // ✅ Request POST_NOTIFICATIONS permission if needed
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        REQUEST_NOTIFICATION_PERMISSION);
+            }
+        }
 
         subjectDropdown = findViewById(R.id.subjectDropdown);
         attendanceValue = findViewById(R.id.attendanceValue);
@@ -88,6 +120,19 @@ public class StudentDashboardActivity extends AppCompatActivity {
         });
 
         setupNavigation();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Notifications will be disabled unless permission is granted", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void fetchCourses() {
@@ -177,7 +222,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 } else if (itemId == R.id.nav_contact) {
                     startActivity(new Intent(this, ContactLecturerActivity.class));
                 } else if (itemId == R.id.nav_timetable) {
-                    startActivity(new Intent(this, ViewTimetableActivity.class)); // ✅ Updated to student version
+                    startActivity(new Intent(this, ViewTimetableActivity.class));
                 } else if (itemId == R.id.nav_logout) {
                     FirebaseAuth.getInstance().signOut();
                     startActivity(new Intent(this, LoginActivity.class));
