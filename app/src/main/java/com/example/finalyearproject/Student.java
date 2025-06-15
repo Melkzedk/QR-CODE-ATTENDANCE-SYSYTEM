@@ -8,6 +8,8 @@ public class Student {
     public String department;
     public String course;
 
+    private String key;  // 🔑 Firebase key for this student (not stored in DB, used in app)
+
     // Required empty constructor for Firebase
     public Student() {
     }
@@ -46,5 +48,14 @@ public class Student {
         return course;
     }
 
-    // (Optional) You can add setters if you plan to modify these fields later
+    // Getter and Setter for key 🔑
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    // Optional: Add setters for other fields if you want to allow updating them
 }
