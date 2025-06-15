@@ -1,9 +1,7 @@
 package com.example.finalyearproject;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,7 +24,7 @@ public class ManageCoursesActivity extends AppCompatActivity {
 
         courseListView = findViewById(R.id.courseListView);
         addNewCourseBtn = findViewById(R.id.addNewCourseBtn);
-        coursesRef = FirebaseDatabase.getInstance().getReference("Courses");
+        coursesRef = FirebaseDatabase.getInstance().getReference("courses");
 
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, courseList);
         courseListView.setAdapter(adapter);
@@ -47,8 +45,10 @@ public class ManageCoursesActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 courseList.clear();
                 for (DataSnapshot courseSnap : snapshot.getChildren()) {
-                    String courseName = courseSnap.getKey();
-                    courseList.add(courseName);
+                    String courseName = courseSnap.child("courseName").getValue(String.class);
+                    if (courseName != null) {
+                        courseList.add(courseName);
+                    }
                 }
                 adapter.notifyDataSetChanged();
             }
@@ -71,9 +71,12 @@ public class ManageCoursesActivity extends AppCompatActivity {
         builder.setPositiveButton("Add", (dialog, which) -> {
             String courseName = input.getText().toString().trim();
             if (!courseName.isEmpty()) {
-                coursesRef.child(courseName).setValue(true)
-                        .addOnSuccessListener(aVoid -> Toast.makeText(this, "Course added", Toast.LENGTH_SHORT).show())
-                        .addOnFailureListener(e -> Toast.makeText(this, "Failed to add course", Toast.LENGTH_SHORT).show());
+                String courseId = coursesRef.push().getKey();
+                if (courseId != null) {
+                    coursesRef.child(courseId).child("courseName").setValue(courseName)
+                            .addOnSuccessListener(aVoid -> Toast.makeText(this, "Course added", Toast.LENGTH_SHORT).show())
+                            .addOnFailureListener(e -> Toast.makeText(this, "Failed to add course", Toast.LENGTH_SHORT).show());
+                }
             }
         });
 
@@ -107,11 +110,21 @@ public class ManageCoursesActivity extends AppCompatActivity {
         builder.setPositiveButton("Update", (dialog, which) -> {
             String newName = input.getText().toString().trim();
             if (!newName.isEmpty() && !newName.equals(oldName)) {
-                coursesRef.child(oldName).removeValue()
-                        .addOnSuccessListener(aVoid -> {
-                            coursesRef.child(newName).setValue(true)
-                                    .addOnSuccessListener(aVoid1 -> Toast.makeText(this, "Course updated", Toast.LENGTH_SHORT).show());
-                        });
+                coursesRef.orderByChild("courseName").equalTo(oldName).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        for (DataSnapshot courseSnap : snapshot.getChildren()) {
+                            courseSnap.getRef().child("courseName").setValue(newName)
+                                    .addOnSuccessListener(aVoid -> Toast.makeText(ManageCoursesActivity.this, "Course updated", Toast.LENGTH_SHORT).show())
+                                    .addOnFailureListener(e -> Toast.makeText(ManageCoursesActivity.this, "Failed to update", Toast.LENGTH_SHORT).show());
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(ManageCoursesActivity.this, "Update cancelled", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
 
@@ -120,8 +133,20 @@ public class ManageCoursesActivity extends AppCompatActivity {
     }
 
     private void deleteCourse(String courseName) {
-        coursesRef.child(courseName).removeValue()
-                .addOnSuccessListener(aVoid -> Toast.makeText(this, "Course deleted", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e -> Toast.makeText(this, "Failed to delete", Toast.LENGTH_SHORT).show());
+        coursesRef.orderByChild("courseName").equalTo(courseName).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot courseSnap : snapshot.getChildren()) {
+                    courseSnap.getRef().removeValue()
+                            .addOnSuccessListener(aVoid -> Toast.makeText(ManageCoursesActivity.this, "Course deleted", Toast.LENGTH_SHORT).show())
+                            .addOnFailureListener(e -> Toast.makeText(ManageCoursesActivity.this, "Failed to delete", Toast.LENGTH_SHORT).show());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(ManageCoursesActivity.this, "Delete cancelled", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }
