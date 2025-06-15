@@ -1,6 +1,7 @@
 package com.example.finalyearproject;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,16 +12,20 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.database.DatabaseReference;
+
 import java.util.List;
 
 public class StudentAdapter extends ArrayAdapter<Student> {
     private Context context;
     private List<Student> students;
+    private DatabaseReference studentsRef;
 
-    public StudentAdapter(Context context, List<Student> students) {
+    public StudentAdapter(Context context, List<Student> students, DatabaseReference studentsRef) {
         super(context, 0, students);
         this.context = context;
         this.students = students;
+        this.studentsRef = studentsRef;
     }
 
     @NonNull
@@ -40,18 +45,38 @@ public class StudentAdapter extends ArrayAdapter<Student> {
         textName.setText(student.getName());
 
         btnEdit.setOnClickListener(v -> {
-            // Handle edit logic here
-            Toast.makeText(context, "Edit " + student.getName(), Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(context, EditStudentActivity.class);
+            intent.putExtra("studentKey", student.getKey());
+            intent.putExtra("name", student.getName());
+            intent.putExtra("regNumber", student.getRegNumber());
+            intent.putExtra("email", student.getEmail());
+            intent.putExtra("department", student.getDepartment());
+            intent.putExtra("course", student.getCourse());
+            context.startActivity(intent);
         });
 
         btnDelete.setOnClickListener(v -> {
-            // Handle delete logic here
-            Toast.makeText(context, "Delete " + student.getName(), Toast.LENGTH_SHORT).show();
+            if (student.getKey() != null) {
+                studentsRef.child(student.getKey()).removeValue()
+                        .addOnSuccessListener(aVoid ->
+                                Toast.makeText(context, "Deleted " + student.getName(), Toast.LENGTH_SHORT).show())
+                        .addOnFailureListener(e ->
+                                Toast.makeText(context, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            } else {
+                Toast.makeText(context, "Student key is missing!", Toast.LENGTH_SHORT).show();
+            }
         });
 
         btnDeactivate.setOnClickListener(v -> {
-            // Handle deactivate logic here
-            Toast.makeText(context, "Deactivate " + student.getName(), Toast.LENGTH_SHORT).show();
+            if (student.getKey() != null) {
+                studentsRef.child(student.getKey()).child("status").setValue("deactivated")
+                        .addOnSuccessListener(aVoid ->
+                                Toast.makeText(context, "Deactivated " + student.getName(), Toast.LENGTH_SHORT).show())
+                        .addOnFailureListener(e ->
+                                Toast.makeText(context, "Deactivate failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            } else {
+                Toast.makeText(context, "Student key is missing!", Toast.LENGTH_SHORT).show();
+            }
         });
 
         return convertView;

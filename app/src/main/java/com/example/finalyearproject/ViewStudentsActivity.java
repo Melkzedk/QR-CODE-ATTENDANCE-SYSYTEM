@@ -3,17 +3,24 @@ package com.example.finalyearproject;
 import android.os.Bundle;
 import android.widget.ListView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.database.*;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
 
 public class ViewStudentsActivity extends AppCompatActivity {
 
-    ListView studentListView;
-    ArrayList<Student> studentList;
-    StudentAdapter adapter;
-    DatabaseReference studentsRef;
+    private ListView studentListView;
+    private ArrayList<Student> studentList;
+    private StudentAdapter adapter;
+    private DatabaseReference studentsRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,11 +29,16 @@ public class ViewStudentsActivity extends AppCompatActivity {
 
         studentListView = findViewById(R.id.studentListView);
         studentList = new ArrayList<>();
-        adapter = new StudentAdapter(this, studentList);
-        studentListView.setAdapter(adapter);
-
         studentsRef = FirebaseDatabase.getInstance().getReference("Users/Students");
 
+        // Pass the DatabaseReference to the adapter
+        adapter = new StudentAdapter(this, studentList, studentsRef);
+        studentListView.setAdapter(adapter);
+
+        loadStudents();
+    }
+
+    private void loadStudents() {
         studentsRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -34,7 +46,7 @@ public class ViewStudentsActivity extends AppCompatActivity {
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Student student = data.getValue(Student.class);
                     if (student != null) {
-                        student.setKey(data.getKey()); // assuming you add a key field for Firebase key
+                        student.setKey(data.getKey()); // Set Firebase key
                         studentList.add(student);
                     }
                 }

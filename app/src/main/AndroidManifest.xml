@@ -60,6 +60,7 @@
         <activity android:name=".ContactLecturerActivity"/>
         <activity android:name=".DownloadReportActivity"/>
         <activity android:name=".ProfileSettingsActivity"/>
+        <activity android:name=".EditStudentActivity"/>
 
     </application>
 

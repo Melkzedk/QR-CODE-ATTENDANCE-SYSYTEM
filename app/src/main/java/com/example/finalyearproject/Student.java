@@ -7,8 +7,9 @@ public class Student {
     public String email;
     public String department;
     public String course;
+    public String status;  // For deactivation status (optional but useful)
 
-    private String key;  // 🔑 Firebase key for this student (not stored in DB, used in app)
+    private String key;  // Firebase key (used internally, not stored in DB)
 
     // Required empty constructor for Firebase
     public Student() {
@@ -21,41 +22,22 @@ public class Student {
         this.email = email;
         this.department = department;
         this.course = course;
+        this.status = "active"; // default status
     }
 
     // Getters
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public String getRegNumber() { return regNumber; }
+    public String getEmail() { return email; }
+    public String getDepartment() { return department; }
+    public String getCourse() { return course; }
+    public String getStatus() { return status; }
 
-    public String getName() {
-        return name;
-    }
+    // Setters
+    public void setStatus(String status) { this.status = status; }
 
-    public String getRegNumber() {
-        return regNumber;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getDepartment() {
-        return department;
-    }
-
-    public String getCourse() {
-        return course;
-    }
-
-    // Getter and Setter for key 🔑
-    public String getKey() {
-        return key;
-    }
-
-    public void setKey(String key) {
-        this.key = key;
-    }
-
-    // Optional: Add setters for other fields if you want to allow updating them
+    // Key
+    public String getKey() { return key; }
+    public void setKey(String key) { this.key = key; }
 }
