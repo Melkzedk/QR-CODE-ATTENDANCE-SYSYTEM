@@ -51,11 +51,11 @@ public class EditStudentActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Student student = snapshot.getValue(Student.class);
                 if (student != null) {
-                    editName.setText(student.getName());
-                    editRegNumber.setText(student.getRegNumber());
-                    editEmail.setText(student.getEmail());
-                    editDepartment.setText(student.getDepartment());
-                    editCourse.setText(student.getCourse());
+                    editName.setText(student.name);
+                    editRegNumber.setText(student.regNumber);
+                    editEmail.setText(student.email);
+                    editDepartment.setText(student.department);
+                    editCourse.setText(student.course);
                 } else {
                     Toast.makeText(EditStudentActivity.this, "Student not found!", Toast.LENGTH_SHORT).show();
                     finish();

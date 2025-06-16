@@ -13,7 +13,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 public class AddLecturerActivity extends AppCompatActivity {
 
-    EditText lecturerName, lecturerID, lecturerEmail, lecturerPhone, lecturerDepartment;
+    EditText lecturerName, lecturerID, lecturerEmail, lecturerPhone, lecturerDepartment, lecturerPassword;
     Button btnAddLecturer, btnRemoveLecturer;
     DatabaseReference lecturerRef;
 
@@ -27,6 +27,7 @@ public class AddLecturerActivity extends AppCompatActivity {
         lecturerEmail = findViewById(R.id.lecturerEmail);
         lecturerPhone = findViewById(R.id.lecturerPhone);
         lecturerDepartment = findViewById(R.id.lecturerDepartment);
+        lecturerPassword = findViewById(R.id.lecturerPassword);
         btnAddLecturer = findViewById(R.id.btnAddLecturer);
         btnRemoveLecturer = findViewById(R.id.btnRemoveLecturer);
 
@@ -38,14 +39,15 @@ public class AddLecturerActivity extends AppCompatActivity {
             String email = lecturerEmail.getText().toString().trim();
             String phone = lecturerPhone.getText().toString().trim();
             String dept = lecturerDepartment.getText().toString().trim();
+            String password = lecturerPassword.getText().toString().trim();
 
-            if (TextUtils.isEmpty(name) || TextUtils.isEmpty(id) || TextUtils.isEmpty(email) ||
-                    TextUtils.isEmpty(phone) || TextUtils.isEmpty(dept)) {
+            if (TextUtils.isEmpty(name) || TextUtils.isEmpty(id) || TextUtils.isEmpty(email)
+                    || TextUtils.isEmpty(phone) || TextUtils.isEmpty(dept) || TextUtils.isEmpty(password)) {
                 Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            Lecturer lecturer = new Lecturer(id, name, email, phone, dept);
+            Lecturer lecturer = new Lecturer(id, name, email, phone, dept, password);
             lecturerRef.child(id).setValue(lecturer)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
@@ -55,6 +57,7 @@ public class AddLecturerActivity extends AppCompatActivity {
                             lecturerEmail.setText("");
                             lecturerPhone.setText("");
                             lecturerDepartment.setText("");
+                            lecturerPassword.setText("");
                         } else {
                             Toast.makeText(this, "Failed to add lecturer", Toast.LENGTH_SHORT).show();
                         }
@@ -77,6 +80,7 @@ public class AddLecturerActivity extends AppCompatActivity {
                             lecturerEmail.setText("");
                             lecturerPhone.setText("");
                             lecturerDepartment.setText("");
+                            lecturerPassword.setText("");
                         } else {
                             Toast.makeText(this, "Failed to remove lecturer", Toast.LENGTH_SHORT).show();
                         }

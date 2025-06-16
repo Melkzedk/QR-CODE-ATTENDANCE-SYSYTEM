@@ -6,36 +6,23 @@ public class Lecturer {
     public String email;
     public String phone;
     public String department;
+    public String password;
 
-    public Lecturer() {
-        // Needed for Firebase
-    }
+    public Lecturer() {}
 
-    public Lecturer(String id, String name, String email, String phone, String department) {
+    public Lecturer(String id, String name, String email, String phone, String department, String password) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.phone = phone;
         this.department = department;
+        this.password = password;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public String getDepartment() {
-        return department;
-    }
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+    public String getPhone() { return phone; }
+    public String getDepartment() { return department; }
+    public String getPassword() { return password; }
 }

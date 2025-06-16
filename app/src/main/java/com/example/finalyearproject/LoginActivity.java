@@ -7,15 +7,17 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.*;
 
 public class LoginActivity extends AppCompatActivity {
+
     EditText loginRegNumber, loginPassword;
     Button loginBtn;
     TextView registerRedirect;
-    FirebaseAuth mAuth;
+    DatabaseReference usersRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,7 +28,8 @@ public class LoginActivity extends AppCompatActivity {
         loginPassword = findViewById(R.id.loginPassword);
         loginBtn = findViewById(R.id.loginBtn);
         registerRedirect = findViewById(R.id.registerRedirect);
-        mAuth = FirebaseAuth.getInstance();
+
+        usersRef = FirebaseDatabase.getInstance().getReference("Users");
 
         loginBtn.setOnClickListener(v -> {
             String reg = loginRegNumber.getText().toString().trim();
@@ -37,7 +40,7 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // ✅ Admin Login (hardcoded)
+            // ✅ Admin login
             if (reg.equalsIgnoreCase("admin") && pass.equals("admin123")) {
                 Toast.makeText(this, "Admin login successful", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, AdminDashboardActivity.class));
@@ -45,25 +48,59 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // ✅ Lecturer Login (hardcoded)
-            if (reg.equalsIgnoreCase("lecturer") && pass.equals("Lecturer123")) {
-                Toast.makeText(this, "Lecturer login successful", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, LecturerDashboardActivity.class));
-                finish();
-                return;
-            }
+            // 🔍 First check Lecturers
+            usersRef.child("Lecturers").orderByChild("id").equalTo(reg)
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            if (snapshot.exists()) {
+                                for (DataSnapshot data : snapshot.getChildren()) {
+                                    String dbPass = data.child("password").getValue(String.class);
+                                    if (dbPass != null && dbPass.equals(pass)) {
+                                        Toast.makeText(LoginActivity.this, "Lecturer login successful", Toast.LENGTH_SHORT).show();
+                                        startActivity(new Intent(LoginActivity.this, LecturerDashboardActivity.class));
+                                        finish();
+                                        return;
+                                    } else {
+                                        Toast.makeText(LoginActivity.this, "Wrong password for lecturer", Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+                                }
+                            } else {
+                                // 🔍 Then check Students
+                                usersRef.child("Students").orderByChild("regNumber").equalTo(reg)
+                                        .addListenerForSingleValueEvent(new ValueEventListener() {
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                                if (snapshot.exists()) {
+                                                    for (DataSnapshot data : snapshot.getChildren()) {
+                                                        String dbPass = data.child("password").getValue(String.class);
+                                                        if (dbPass != null && dbPass.equals(pass)) {
+                                                            Toast.makeText(LoginActivity.this, "Student login successful", Toast.LENGTH_SHORT).show();
+                                                            startActivity(new Intent(LoginActivity.this, StudentDashboardActivity.class));
+                                                            finish();
+                                                            return;
+                                                        } else {
+                                                            Toast.makeText(LoginActivity.this, "Wrong password for student", Toast.LENGTH_SHORT).show();
+                                                            return;
+                                                        }
+                                                    }
+                                                } else {
+                                                    Toast.makeText(LoginActivity.this, "No user found with provided ID/RegNumber", Toast.LENGTH_SHORT).show();
+                                                }
+                                            }
 
-            // ✅ Student Login (via Firebase)
-            String email = reg + "@qrcode.edu"; // using regNumber as email format
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError error) {
+                                                Toast.makeText(LoginActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                            }
+                        }
 
-            mAuth.signInWithEmailAndPassword(email, pass)
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(this, "Student login successful", Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(this, StudentDashboardActivity.class));
-                            finish();
-                        } else {
-                            Toast.makeText(this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            Toast.makeText(LoginActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
         });
