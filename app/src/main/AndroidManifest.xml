@@ -38,17 +38,23 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Main entry point -->
+        <!-- Splash screen as MAIN LAUNCHER -->
         <activity
-            android:name=".RegisterActivity"
+            android:name=".SplashActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.FinalYearProject">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- RegisterActivity no longer launcher -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.FinalYearProject" />
 
         <!-- Other activities -->
         <activity android:name=".LoginActivity" />
@@ -62,19 +68,19 @@
         <activity android:name=".AdminDashboardActivity" />
         <activity android:name=".AddStudentActivity" />
         <activity android:name=".AddLecturerActivity" />
-        <activity android:name=".ViewStudentsActivity"/>
-        <activity android:name=".ViewLecturersActivity"/>
+        <activity android:name=".ViewStudentsActivity" />
+        <activity android:name=".ViewLecturersActivity" />
         <activity android:name=".ViewAttendanceActivity" />
         <activity android:name=".ManageCoursesActivity" />
-        <activity android:name=".AnnouncementsActivity"/>
-        <activity android:name=".AttendanceHistoryActivity"/>
-        <activity android:name=".ContactLecturerActivity"/>
-        <activity android:name=".DownloadReportActivity"/>
-        <activity android:name=".ProfileSettingsActivity"/>
-        <activity android:name=".EditStudentActivity"/>
+        <activity android:name=".AnnouncementsActivity" />
+        <activity android:name=".AttendanceHistoryActivity" />
+        <activity android:name=".ContactLecturerActivity" />
+        <activity android:name=".DownloadReportActivity" />
+        <activity android:name=".ProfileSettingsActivity" />
+        <activity android:name=".EditStudentActivity" />
         <activity android:name=".ViewTimetableActivity" />
-        <activity android:name=".SendMessageActivity"/>
-        <activity android:name=".TimetableActivity"/>
+        <activity android:name=".SendMessageActivity" />
+        <activity android:name=".TimetableActivity" />
     </application>
 
 </manifest>
