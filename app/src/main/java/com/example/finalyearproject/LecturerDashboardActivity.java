@@ -1,13 +1,14 @@
 package com.example.finalyearproject;
 
+import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.view.MenuItem;
+import androidx.cardview.widget.CardView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -20,42 +21,32 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.*;
 
 public class LecturerDashboardActivity extends AppCompatActivity {
 
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1001;
+    private static final String CHANNEL_ID = "class_channel";
 
-    DrawerLayout drawerLayout;
-    NavigationView navigationView;
-    ActionBarDrawerToggle toggle;
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private ActionBarDrawerToggle toggle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lecturer_dashboard);
 
-        // 🔔 Create Notification Channel
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    "class_channel", "Class Notifications",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
-            }
-        }
+        setupToolbarAndDrawer();
+        setupNotificationChannel();
+        requestNotificationPermissionIfNeeded();
+        setupNavigationListener();
+        setupQuickActionCards();
+        loadLecturerName();
+    }
 
-        // ✅ Request POST_NOTIFICATIONS permission on Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        REQUEST_NOTIFICATION_PERMISSION);
-            }
-        }
-
+    private void setupToolbarAndDrawer() {
         drawerLayout = findViewById(R.id.drawerLayout);
         navigationView = findViewById(R.id.navView);
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -65,31 +56,98 @@ public class LecturerDashboardActivity extends AppCompatActivity {
         toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.open, R.string.close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+    }
 
+    private void setupQuickActionCards() {
+        CardView cardMarkAttendance = findViewById(R.id.cardMarkAttendance);
+        CardView cardSendMessage = findViewById(R.id.cardSendMessage);
+        CardView cardGenerateReport = findViewById(R.id.cardGenerateReport);
+
+        cardMarkAttendance.setOnClickListener(v -> openActivity(GenerateQRActivity.class));
+        cardSendMessage.setOnClickListener(v -> openActivity(SendMessageActivity.class));
+        cardGenerateReport.setOnClickListener(v -> openActivity(AttendanceReportActivity.class));
+    }
+
+    private void loadLecturerName() {
+        TextView lecturerNameTextView = findViewById(R.id.lecturerName);
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (currentUser != null) {
+            String uid = currentUser.getUid();
+            DatabaseReference ref = FirebaseDatabase.getInstance().getReference("lecturers").child(uid).child("name");
+
+            ref.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String name = snapshot.getValue(String.class);
+                    if (name != null) {
+                        lecturerNameTextView.setText("Welcome, " + name);
+                    } else {
+                        lecturerNameTextView.setText("Welcome, Lecturer");
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    lecturerNameTextView.setText("Welcome, Lecturer");
+                    Toast.makeText(LecturerDashboardActivity.this, "Failed to load name", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+    private void setupNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Class Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        REQUEST_NOTIFICATION_PERMISSION);
+            }
+        }
+    }
+
+    private void setupNavigationListener() {
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
             if (id == R.id.nav_add_course) {
-                startActivity(new Intent(this, AddCourseActivity.class));
+                openActivity(AddCourseActivity.class);
             } else if (id == R.id.nav_manage_course) {
-                startActivity(new Intent(this, ManageCoursesActivity.class));
+                openActivity(ManageCoursesActivity.class);
             } else if (id == R.id.nav_view_timetable) {
-                startActivity(new Intent(this, ViewTimetableActivity.class));
+                openActivity(ViewTimetableActivity.class);
             } else if (id == R.id.nav_mark_attendance) {
-                startActivity(new Intent(this, GenerateQRActivity.class));
+                openActivity(GenerateQRActivity.class);
             } else if (id == R.id.nav_view_attendance) {
-                startActivity(new Intent(this, ViewAttendanceActivity.class));
+                openActivity(ViewAttendanceActivity.class);
             } else if (id == R.id.nav_generate_report) {
-                startActivity(new Intent(this, AttendanceReportActivity.class));
+                openActivity(AttendanceReportActivity.class);
             } else if (id == R.id.nav_send_message) {
-                startActivity(new Intent(this, SendMessageActivity.class));
+                openActivity(SendMessageActivity.class);
             } else if (id == R.id.nav_view_messages) {
-                startActivity(new Intent(this, AnnouncementsActivity.class));
+                openActivity(AnnouncementsActivity.class);
             } else if (id == R.id.nav_logout) {
                 FirebaseAuth.getInstance().signOut();
                 Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, LoginActivity.class));
+                openActivity(LoginActivity.class);
                 finish();
+            } else {
+                Toast.makeText(this, "Unknown action", Toast.LENGTH_SHORT).show();
             }
 
             drawerLayout.closeDrawers();
@@ -97,12 +155,10 @@ public class LecturerDashboardActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        return toggle.onOptionsItemSelected(item) || super.onOptionsItemSelected(item);
+    private void openActivity(Class<?> targetActivity) {
+        startActivity(new Intent(this, targetActivity));
     }
 
-    // ✅ Handle result of permission request
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
