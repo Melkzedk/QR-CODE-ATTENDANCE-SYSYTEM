@@ -54,17 +54,19 @@ public class LoginActivity extends AppCompatActivity {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
                             if (snapshot.exists()) {
+                                boolean found = false;
                                 for (DataSnapshot data : snapshot.getChildren()) {
                                     String dbPass = data.child("password").getValue(String.class);
                                     if (dbPass != null && dbPass.equals(pass)) {
+                                        found = true;
                                         Toast.makeText(LoginActivity.this, "Lecturer login successful", Toast.LENGTH_SHORT).show();
                                         startActivity(new Intent(LoginActivity.this, LecturerDashboardActivity.class));
                                         finish();
-                                        return;
-                                    } else {
-                                        Toast.makeText(LoginActivity.this, "Wrong password for lecturer", Toast.LENGTH_SHORT).show();
-                                        return;
+                                        break;
                                     }
+                                }
+                                if (!found) {
+                                    Toast.makeText(LoginActivity.this, "Wrong password for lecturer", Toast.LENGTH_SHORT).show();
                                 }
                             } else {
                                 // 🔍 Then check Students
@@ -73,17 +75,19 @@ public class LoginActivity extends AppCompatActivity {
                                             @Override
                                             public void onDataChange(@NonNull DataSnapshot snapshot) {
                                                 if (snapshot.exists()) {
+                                                    boolean found = false;
                                                     for (DataSnapshot data : snapshot.getChildren()) {
                                                         String dbPass = data.child("password").getValue(String.class);
                                                         if (dbPass != null && dbPass.equals(pass)) {
+                                                            found = true;
                                                             Toast.makeText(LoginActivity.this, "Student login successful", Toast.LENGTH_SHORT).show();
                                                             startActivity(new Intent(LoginActivity.this, StudentDashboardActivity.class));
                                                             finish();
-                                                            return;
-                                                        } else {
-                                                            Toast.makeText(LoginActivity.this, "Wrong password for student", Toast.LENGTH_SHORT).show();
-                                                            return;
+                                                            break;
                                                         }
+                                                    }
+                                                    if (!found) {
+                                                        Toast.makeText(LoginActivity.this, "Wrong password for student", Toast.LENGTH_SHORT).show();
                                                     }
                                                 } else {
                                                     Toast.makeText(LoginActivity.this, "No user found with provided ID/RegNumber", Toast.LENGTH_SHORT).show();
