@@ -6,5 +6,10 @@
     <item android:id="@+id/nav_profile" android:title="Profile / Settings" android:icon="@drawable/account_circle_24px" />
     <item android:id="@+id/nav_contact" android:title="Contact Lecturer" android:icon="@drawable/mail_24px" />
     <item android:id="@+id/nav_timetable" android:title="View Timetable (Optional)" android:icon="@drawable/event_24px" />
+
+    <!-- New item added here -->
+    <item android:id="@+id/nav_submit_assignment" android:title="Submit Assignment" android:icon="@drawable/upload_file_24px" />
+
+    <!-- Logout should remain at the bottom -->
     <item android:id="@+id/nav_logout" android:title="Logout" android:icon="@drawable/logout" />
 </menu>

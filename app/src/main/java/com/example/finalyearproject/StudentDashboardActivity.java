@@ -25,12 +25,7 @@ import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.navigation.NavigationView;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,17 +41,28 @@ public class StudentDashboardActivity extends AppCompatActivity {
     ArrayList<String> courseDisplayList = new ArrayList<>();
     Map<String, String> displayToCodeMap = new HashMap<>();
     ArrayAdapter<String> adapter;
-    DatabaseReference coursesRef, attendanceRef;
+    DatabaseReference coursesRef, attendanceRef, usersRef;
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     Toolbar toolbar;
+
+    String regNumber; // 🔑 Holds passed reg number
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_dashboard);
 
-        // 🔔 Notification Channel for Class Reminders
+        // 🔐 Get passed regNumber from LoginActivity
+        regNumber = getIntent().getStringExtra("regNumber");
+        if (regNumber == null || regNumber.isEmpty()) {
+            Toast.makeText(this, "No user info found. Please login again.", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
+        // 🔔 Create Notification Channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     "class_channel", "Class Notifications",
@@ -68,7 +74,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
         }
 
-        // ✅ Request POST_NOTIFICATIONS permission if needed
+        // 🔐 Request POST_NOTIFICATIONS permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -106,8 +112,10 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         coursesRef = FirebaseDatabase.getInstance().getReference("courses");
         attendanceRef = FirebaseDatabase.getInstance().getReference("Attendance");
+        usersRef = FirebaseDatabase.getInstance().getReference("Users/Students");
 
         fetchCourses();
+        loadProfileHeader(); // 👤 show student name/email in nav drawer
 
         btnSubmitSubject.setOnClickListener(v -> {
             String selectedDisplay = subjectDropdown.getText().toString().trim();
@@ -122,51 +130,34 @@ public class StudentDashboardActivity extends AppCompatActivity {
         setupNavigation();
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Notifications will be disabled unless permission is granted", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
     private void fetchCourses() {
-        if (coursesRef != null) {
-            coursesRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    courseDisplayList.clear();
-                    displayToCodeMap.clear();
+        coursesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                courseDisplayList.clear();
+                displayToCodeMap.clear();
 
-                    for (DataSnapshot courseSnapshot : snapshot.getChildren()) {
-                        String courseCode = courseSnapshot.child("courseCode").getValue(String.class);
-                        String courseName = courseSnapshot.child("courseName").getValue(String.class);
+                for (DataSnapshot courseSnapshot : snapshot.getChildren()) {
+                    String courseCode = courseSnapshot.child("courseCode").getValue(String.class);
+                    String courseName = courseSnapshot.child("courseName").getValue(String.class);
 
-                        if (courseCode != null && courseName != null) {
-                            String display = courseCode + " - " + courseName;
-                            courseDisplayList.add(display);
-                            displayToCodeMap.put(display, courseCode);
-                        }
+                    if (courseCode != null && courseName != null) {
+                        String display = courseCode + " - " + courseName;
+                        courseDisplayList.add(display);
+                        displayToCodeMap.put(display, courseCode);
                     }
-                    adapter.notifyDataSetChanged();
                 }
+                adapter.notifyDataSetChanged();
+            }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Toast.makeText(StudentDashboardActivity.this, "Failed to load courses", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(StudentDashboardActivity.this, "Failed to load courses", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void fetchAttendancePercentage(String courseCode) {
-        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
         attendanceRef.child(courseCode).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -174,11 +165,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 long totalSessions = snapshot.getChildrenCount();
 
                 for (DataSnapshot sessionSnapshot : snapshot.getChildren()) {
-                    if (sessionSnapshot.hasChild(uid)) {
-                        Boolean isPresent = sessionSnapshot.child(uid).getValue(Boolean.class);
-                        if (Boolean.TRUE.equals(isPresent)) {
-                            attended++;
-                        }
+                    Boolean isPresent = sessionSnapshot.child(regNumber).getValue(Boolean.class);
+                    if (Boolean.TRUE.equals(isPresent)) {
+                        attended++;
                     }
                 }
 
@@ -197,6 +186,38 @@ public class StudentDashboardActivity extends AppCompatActivity {
         });
     }
 
+    private void loadProfileHeader() {
+        usersRef.orderByChild("regNumber").equalTo(regNumber)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            for (DataSnapshot student : snapshot.getChildren()) {
+                                String name = student.child("name").getValue(String.class);
+                                String email = student.child("email").getValue(String.class);
+
+                                View headerView = navigationView.getHeaderView(0);
+                                TextView profileName = headerView.findViewById(R.id.profileName);
+                                TextView profileEmail = headerView.findViewById(R.id.profileEmail);
+                                ImageView profileImage = headerView.findViewById(R.id.profileImage);
+
+                                profileName.setText(name != null ? name : "Student");
+                                profileEmail.setText(email != null ? email : "");
+
+                                profileImage.setOnClickListener(v -> {
+                                    Toast.makeText(StudentDashboardActivity.this, "Image picker not yet implemented", Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(StudentDashboardActivity.this, "Error loading profile info", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
     private void setupNavigation() {
         if (navigationView != null) {
             navigationView.setNavigationItemSelectedListener(item -> {
@@ -209,6 +230,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
                     } else {
                         Intent intent = new Intent(this, QRScannerActivity.class);
                         intent.putExtra("subject", selected);
+                        intent.putExtra("regNumber", regNumber);
                         startActivity(intent);
                     }
                 } else if (itemId == R.id.nav_attendance_history) {
@@ -223,8 +245,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
                     startActivity(new Intent(this, ContactLecturerActivity.class));
                 } else if (itemId == R.id.nav_timetable) {
                     startActivity(new Intent(this, ViewTimetableActivity.class));
+                } else if (itemId == R.id.nav_submit_assignment) {
+                    startActivity(new Intent(this, SubmitAssignmentActivity.class));
                 } else if (itemId == R.id.nav_logout) {
-                    FirebaseAuth.getInstance().signOut();
                     startActivity(new Intent(this, LoginActivity.class));
                     finish();
                 }
@@ -232,18 +255,19 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 drawerLayout.closeDrawers();
                 return true;
             });
+        }
+    }
 
-            View headerView = navigationView.getHeaderView(0);
-            TextView profileName = headerView.findViewById(R.id.profileName);
-            TextView profileEmail = headerView.findViewById(R.id.profileEmail);
-            ImageView profileImage = headerView.findViewById(R.id.profileImage);
-
-            profileEmail.setText(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-            profileName.setText("Student Name");
-
-            profileImage.setOnClickListener(v ->
-                    Toast.makeText(this, "Image picker not yet implemented", Toast.LENGTH_SHORT).show()
-            );
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Notifications will be disabled unless permission is granted", Toast.LENGTH_LONG).show();
+            }
         }
     }
 }

@@ -82,6 +82,9 @@
         <activity android:name=".ViewTimetableActivity" />
         <activity android:name=".SendMessageActivity" />
         <activity android:name=".TimetableActivity" />
+        <activity android:name=".SubmitAssignmentActivity"/>
+        <activity android:name=".ViewAssignmentsActivity"/>
+
     </application>
 
 </manifest>

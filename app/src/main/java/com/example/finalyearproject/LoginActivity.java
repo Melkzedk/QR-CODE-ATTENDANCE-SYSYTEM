@@ -40,7 +40,7 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // ✅ Admin login
+            // Admin login
             if (reg.equalsIgnoreCase("admin") && pass.equals("admin123")) {
                 Toast.makeText(this, "Admin login successful", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, AdminDashboardActivity.class));
@@ -48,47 +48,41 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // 🔍 First check Lecturers
+            // Check Lecturers
             usersRef.child("Lecturers").orderByChild("id").equalTo(reg)
                     .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
                             if (snapshot.exists()) {
-                                boolean found = false;
                                 for (DataSnapshot data : snapshot.getChildren()) {
                                     String dbPass = data.child("password").getValue(String.class);
                                     if (dbPass != null && dbPass.equals(pass)) {
-                                        found = true;
                                         Toast.makeText(LoginActivity.this, "Lecturer login successful", Toast.LENGTH_SHORT).show();
                                         startActivity(new Intent(LoginActivity.this, LecturerDashboardActivity.class));
                                         finish();
-                                        break;
+                                        return;
                                     }
                                 }
-                                if (!found) {
-                                    Toast.makeText(LoginActivity.this, "Wrong password for lecturer", Toast.LENGTH_SHORT).show();
-                                }
+                                Toast.makeText(LoginActivity.this, "Wrong password for lecturer", Toast.LENGTH_SHORT).show();
                             } else {
-                                // 🔍 Then check Students
+                                // Check Students
                                 usersRef.child("Students").orderByChild("regNumber").equalTo(reg)
                                         .addListenerForSingleValueEvent(new ValueEventListener() {
                                             @Override
                                             public void onDataChange(@NonNull DataSnapshot snapshot) {
                                                 if (snapshot.exists()) {
-                                                    boolean found = false;
                                                     for (DataSnapshot data : snapshot.getChildren()) {
                                                         String dbPass = data.child("password").getValue(String.class);
                                                         if (dbPass != null && dbPass.equals(pass)) {
-                                                            found = true;
                                                             Toast.makeText(LoginActivity.this, "Student login successful", Toast.LENGTH_SHORT).show();
-                                                            startActivity(new Intent(LoginActivity.this, StudentDashboardActivity.class));
+                                                            Intent intent = new Intent(LoginActivity.this, StudentDashboardActivity.class);
+                                                            intent.putExtra("regNumber", reg);
+                                                            startActivity(intent);
                                                             finish();
-                                                            break;
+                                                            return;
                                                         }
                                                     }
-                                                    if (!found) {
-                                                        Toast.makeText(LoginActivity.this, "Wrong password for student", Toast.LENGTH_SHORT).show();
-                                                    }
+                                                    Toast.makeText(LoginActivity.this, "Wrong password for student", Toast.LENGTH_SHORT).show();
                                                 } else {
                                                     Toast.makeText(LoginActivity.this, "No user found with provided ID/RegNumber", Toast.LENGTH_SHORT).show();
                                                 }

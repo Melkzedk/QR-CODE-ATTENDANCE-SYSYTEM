@@ -141,6 +141,8 @@ public class LecturerDashboardActivity extends AppCompatActivity {
                 openActivity(SendMessageActivity.class);
             } else if (id == R.id.nav_view_messages) {
                 openActivity(AnnouncementsActivity.class);
+            } else if (id == R.id.nav_view_assignments) {
+                openActivity(ViewAssignmentsActivity.class);  // ✅ New item added here
             } else if (id == R.id.nav_logout) {
                 FirebaseAuth.getInstance().signOut();
                 Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show();
