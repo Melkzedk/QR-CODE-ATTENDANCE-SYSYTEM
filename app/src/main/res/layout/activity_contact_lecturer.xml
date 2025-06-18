@@ -13,6 +13,22 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <!-- Label for the Spinner -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Lecturer"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Spinner to choose Lecturer -->
+    <Spinner
+        android:id="@+id/lecturerSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Message input -->
     <EditText
         android:id="@+id/messageEditText"
         android:layout_width="match_parent"
@@ -22,6 +38,7 @@
         android:gravity="top"
         android:layout_marginBottom="8dp" />
 
+    <!-- Send Button -->
     <Button
         android:id="@+id/sendMessageBtn"
         android:layout_width="match_parent"
