@@ -1,27 +1,26 @@
 package com.example.finalyearproject;
 
 import android.os.Bundle;
+import android.text.format.DateFormat;
+import android.view.View;
 import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.View;
-import android.widget.AdapterView;
-
-
 import com.google.firebase.database.*;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class ViewAttendanceActivity extends AppCompatActivity {
 
-    Spinner courseSpinner;
-    ListView attendanceListView;
-    DatabaseReference dbRef;
-    ArrayList<String> courseList = new ArrayList<>();
-    ArrayAdapter<String> courseAdapter;
-    ArrayList<String> attendanceList = new ArrayList<>();
-    ArrayAdapter<String> attendanceAdapter;
+    private Spinner courseSpinner;
+    private ListView attendanceListView;
+    private DatabaseReference dbRef;
+    private ArrayList<String> courseList = new ArrayList<>();
+    private ArrayAdapter<String> courseAdapter;
+    private ArrayList<String> attendanceList = new ArrayList<>();
+    private ArrayAdapter<String> attendanceAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +45,7 @@ public class ViewAttendanceActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String selectedCourse = courseList.get(position);
-                loadAttendanceForCourse(selectedCourse);
+                loadAttendanceSessions(selectedCourse);
             }
 
             @Override
@@ -58,12 +57,15 @@ public class ViewAttendanceActivity extends AppCompatActivity {
     }
 
     private void loadCourses() {
-        dbRef.child("Courses").addListenerForSingleValueEvent(new ValueEventListener() {
+        dbRef.child("courses").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 courseList.clear();
                 for (DataSnapshot snap : snapshot.getChildren()) {
-                    courseList.add(snap.getKey());
+                    String courseCode = snap.child("courseCode").getValue(String.class);
+                    if (courseCode != null) {
+                        courseList.add(courseCode);
+                    }
                 }
                 courseAdapter.notifyDataSetChanged();
             }
@@ -75,23 +77,32 @@ public class ViewAttendanceActivity extends AppCompatActivity {
         });
     }
 
-    private void loadAttendanceForCourse(String courseName) {
-        dbRef.child("Attendance").child(courseName).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                attendanceList.clear();
-                for (DataSnapshot snap : snapshot.getChildren()) {
-                    String studentId = snap.getKey();
-                    long presentCount = snap.getChildrenCount();
-                    attendanceList.add(studentId + " - Sessions Present: " + presentCount);
-                }
-                attendanceAdapter.notifyDataSetChanged();
-            }
+    private void loadAttendanceSessions(String courseCode) {
+        dbRef.child("attendance_sessions")
+                .orderByChild("courseCode")
+                .equalTo(courseCode)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        attendanceList.clear();
+                        for (DataSnapshot sessionSnap : snapshot.getChildren()) {
+                            long timestamp = sessionSnap.child("timestamp").getValue(Long.class);
+                            String date = DateFormat.format("dd MMM yyyy", new Date(timestamp)).toString();
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(ViewAttendanceActivity.this, "Failed to load attendance", Toast.LENGTH_SHORT).show();
-            }
-        });
+                            int count = 0;
+                            if (sessionSnap.hasChild("attendees")) {
+                                count = (int) sessionSnap.child("attendees").getChildrenCount();
+                            }
+
+                            attendanceList.add("📅 " + date + " | 👥 Students Present: " + count);
+                        }
+                        attendanceAdapter.notifyDataSetChanged();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(ViewAttendanceActivity.this, "Error loading attendance sessions", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }

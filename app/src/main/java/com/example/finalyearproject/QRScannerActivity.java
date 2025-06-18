@@ -14,11 +14,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.*;
 import com.google.zxing.ResultPoint;
 import com.journeyapps.barcodescanner.BarcodeCallback;
 import com.journeyapps.barcodescanner.BarcodeResult;
@@ -104,13 +100,38 @@ public class QRScannerActivity extends AppCompatActivity {
 
                                         if (distance <= 50) {
                                             valid = true;
-                                            DatabaseReference attendancePath = dbRef.child(courseCode)
-                                                    .child(String.valueOf(qrTimestamp)).child(uid);
-                                            attendancePath.setValue(true)
-                                                    .addOnSuccessListener(aVoid ->
-                                                            Toast.makeText(QRScannerActivity.this, "Attendance marked!", Toast.LENGTH_SHORT).show())
-                                                    .addOnFailureListener(e ->
-                                                            Toast.makeText(QRScannerActivity.this, "Failed to mark attendance.", Toast.LENGTH_SHORT).show());
+
+                                            // Fetch user details from "Users"
+                                            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
+                                            userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                                                @Override
+                                                public void onDataChange(@NonNull DataSnapshot userSnap) {
+                                                    if (userSnap.exists()) {
+                                                        String name = userSnap.child("name").getValue(String.class);
+                                                        String regNumber = userSnap.child("regNumber").getValue(String.class);
+
+                                                        StudentAttendance attendance = new StudentAttendance(name, regNumber, System.currentTimeMillis());
+
+                                                        DatabaseReference attendancePath = dbRef.child(courseCode)
+                                                                .child(String.valueOf(qrTimestamp)).child(uid);
+
+                                                        attendancePath.setValue(attendance)
+                                                                .addOnSuccessListener(aVoid ->
+                                                                        Toast.makeText(QRScannerActivity.this, "Attendance marked!", Toast.LENGTH_SHORT).show())
+                                                                .addOnFailureListener(e ->
+                                                                        Toast.makeText(QRScannerActivity.this, "Failed to mark attendance.", Toast.LENGTH_SHORT).show());
+                                                    } else {
+                                                        Toast.makeText(QRScannerActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                                                    }
+                                                    finish();
+                                                }
+
+                                                @Override
+                                                public void onCancelled(@NonNull DatabaseError error) {
+                                                    Toast.makeText(QRScannerActivity.this, "Error fetching user data.", Toast.LENGTH_SHORT).show();
+                                                    finish();
+                                                }
+                                            });
                                             break;
                                         }
                                     }
@@ -118,8 +139,8 @@ public class QRScannerActivity extends AppCompatActivity {
 
                                 if (!valid) {
                                     Toast.makeText(QRScannerActivity.this, "You are too far or QR expired.", Toast.LENGTH_SHORT).show();
+                                    finish();
                                 }
-                                finish();
                             });
                 } else {
                     Toast.makeText(QRScannerActivity.this, "Unable to get your location.", Toast.LENGTH_SHORT).show();
