@@ -72,5 +72,6 @@ dependencies {
     implementation("com.github.SUPERCILEX:poi-android:3.17")
     implementation ("androidx.work:work-runtime:2.9.0")
     implementation ("com.google.guava:guava:31.1-android")
+    implementation ("com.google.android.gms:play-services-location:21.0.1")
 
 }

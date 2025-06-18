@@ -1,11 +1,8 @@
 package com.example.finalyearproject;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -18,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
@@ -25,6 +24,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
+
+import android.location.Location;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ public class GenerateQRActivity extends AppCompatActivity {
     private Map<String, String> courseCodeMap = new HashMap<>();
 
     private static final int LOCATION_PERMISSION_REQUEST = 102;
+    private FusedLocationProviderClient fusedLocationClient;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -55,6 +57,7 @@ public class GenerateQRActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         dbRef = FirebaseDatabase.getInstance().getReference("courses");
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         generateQRButton.setEnabled(false);
         loadCourses();
@@ -111,40 +114,45 @@ public class GenerateQRActivity extends AppCompatActivity {
         long timestamp = System.currentTimeMillis();
         String qrData = courseCode + "|" + timestamp;
 
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            if (location != null) {
-                try {
-                    BarcodeEncoder encoder = new BarcodeEncoder();
-                    Bitmap bitmap = encoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 400, 400);
-                    qrImageView.setImageBitmap(bitmap);
-
-                    DatabaseReference sessionRef = FirebaseDatabase.getInstance().getReference("attendance_sessions");
-                    String sessionId = sessionRef.push().getKey();
-
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("courseCode", courseCode);
-                    data.put("timestamp", timestamp);
-                    data.put("lecturerId", mAuth.getCurrentUser().getUid());
-                    data.put("latitude", location.getLatitude());
-                    data.put("longitude", location.getLongitude());
-
-                    if (sessionId != null) {
-                        sessionRef.child(sessionId).setValue(data)
-                                .addOnSuccessListener(aVoid -> Toast.makeText(this, "QR data saved", Toast.LENGTH_SHORT).show())
-                                .addOnFailureListener(e -> Toast.makeText(this, "Failed to save QR data", Toast.LENGTH_SHORT).show());
-                    }
-
-                } catch (WriterException e) {
-                    Toast.makeText(this, "QR Generation failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(this, "Unable to get location. Try again.", Toast.LENGTH_SHORT).show();
-            }
-        } else {
+                != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, "Location permission not granted.", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        try {
+                            BarcodeEncoder encoder = new BarcodeEncoder();
+                            Bitmap bitmap = encoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 400, 400);
+                            qrImageView.setImageBitmap(bitmap);
+
+                            DatabaseReference sessionRef = FirebaseDatabase.getInstance().getReference("attendance_sessions");
+                            String sessionId = sessionRef.push().getKey();
+
+                            Map<String, Object> data = new HashMap<>();
+                            data.put("courseCode", courseCode);
+                            data.put("timestamp", timestamp);
+                            data.put("lecturerId", mAuth.getCurrentUser().getUid());
+                            data.put("latitude", location.getLatitude());
+                            data.put("longitude", location.getLongitude());
+
+                            if (sessionId != null) {
+                                sessionRef.child(sessionId).setValue(data)
+                                        .addOnSuccessListener(aVoid -> Toast.makeText(this, "QR data saved", Toast.LENGTH_SHORT).show())
+                                        .addOnFailureListener(e -> Toast.makeText(this, "Failed to save QR data", Toast.LENGTH_SHORT).show());
+                            }
+
+                        } catch (WriterException e) {
+                            Toast.makeText(this, "QR Generation failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(this, "Unable to get location. Make sure GPS is enabled.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Location fetch failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 }
