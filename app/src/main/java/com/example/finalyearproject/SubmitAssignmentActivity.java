@@ -12,10 +12,13 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class SubmitAssignmentActivity extends AppCompatActivity {
@@ -47,7 +50,7 @@ public class SubmitAssignmentActivity extends AppCompatActivity {
 
     private void openFilePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*"); // You can filter by PDF/doc etc.
+        intent.setType("*/*");
         startActivityForResult(intent, PICK_FILE_REQUEST);
     }
 
@@ -67,18 +70,44 @@ public class SubmitAssignmentActivity extends AppCompatActivity {
         progressDialog.show();
 
         String userId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-        String fileName = "assignments/" + userId + "_" + System.currentTimeMillis();
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        String fileName = "assignments/" + userId + "_" + timestamp;
 
         StorageReference storageRef = FirebaseStorage.getInstance().getReference().child(fileName);
 
         storageRef.putFile(fileUri)
                 .addOnSuccessListener(taskSnapshot -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(this, "Upload successful", Toast.LENGTH_SHORT).show();
+                    storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                        progressDialog.dismiss();
+                        String downloadUrl = uri.toString();
+
+                        // ✅ Optional: Save file info to Realtime Database
+                        DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference("submissions");
+                        Map<String, Object> fileData = new HashMap<>();
+                        fileData.put("fileUrl", downloadUrl);
+                        fileData.put("fileName", fileUri.getLastPathSegment());
+                        fileData.put("timestamp", timestamp);
+
+                        dbRef.child(userId).setValue(fileData)
+                                .addOnCompleteListener(task -> {
+                                    if (task.isSuccessful()) {
+                                        Toast.makeText(this, "File uploaded and saved!", Toast.LENGTH_SHORT).show();
+                                        selectedFileText.setText("Upload complete.");
+                                    } else {
+                                        Toast.makeText(this, "Upload succeeded, but database failed.", Toast.LENGTH_LONG).show();
+                                    }
+                                });
+
+                    }).addOnFailureListener(e -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(this, "Upload succeeded but failed to get download URL: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+
                 })
                 .addOnFailureListener(e -> {
                     progressDialog.dismiss();
                     Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    e.printStackTrace();
                 })
                 .addOnProgressListener(snapshot -> {
                     double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
