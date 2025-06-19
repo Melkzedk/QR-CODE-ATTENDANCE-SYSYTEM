@@ -2,6 +2,7 @@ package com.example.finalyearproject;
 
 import android.os.Bundle;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.view.View;
 import android.widget.*;
 import androidx.annotation.NonNull;
@@ -85,9 +86,18 @@ public class ViewAttendanceActivity extends AppCompatActivity {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         attendanceList.clear();
+
                         for (DataSnapshot sessionSnap : snapshot.getChildren()) {
-                            long timestamp = sessionSnap.child("timestamp").getValue(Long.class);
-                            String date = DateFormat.format("dd MMM yyyy", new Date(timestamp)).toString();
+                            Long timestamp = null;
+                            try {
+                                timestamp = sessionSnap.child("timestamp").getValue(Long.class);
+                            } catch (Exception e) {
+                                Log.e("AttendanceSession", "Invalid timestamp in: " + sessionSnap.getKey(), e);
+                            }
+
+                            String date = (timestamp != null)
+                                    ? DateFormat.format("dd MMM yyyy", new Date(timestamp)).toString()
+                                    : "Unknown Date";
 
                             int count = 0;
                             if (sessionSnap.hasChild("attendees")) {
@@ -96,6 +106,7 @@ public class ViewAttendanceActivity extends AppCompatActivity {
 
                             attendanceList.add("📅 " + date + " | 👥 Students Present: " + count);
                         }
+
                         attendanceAdapter.notifyDataSetChanged();
                     }
 

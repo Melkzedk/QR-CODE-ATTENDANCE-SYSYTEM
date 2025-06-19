@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -20,6 +19,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.firebase.database.*;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
@@ -32,26 +32,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GenerateQRActivity extends AppCompatActivity {
-
     private Spinner courseSpinner;
     private Button generateQRButton;
     private ImageView qrImageView;
 
     private DatabaseReference dbRef;
-
     private ArrayList<String> courseList = new ArrayList<>();
     private Map<String, String> courseCodeMap = new HashMap<>();
 
     private static final int LOCATION_PERMISSION_REQUEST = 102;
     private FusedLocationProviderClient fusedLocationClient;
-
     private String lecturerId;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Session check
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userType = prefs.getString("userType", null);
         lecturerId = prefs.getString("userId", null);
@@ -137,7 +133,7 @@ public class GenerateQRActivity extends AppCompatActivity {
             return;
         }
 
-        fusedLocationClient.getLastLocation()
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                 .addOnSuccessListener(location -> {
                     if (location == null) {
                         Toast.makeText(this, "Unable to get location.", Toast.LENGTH_SHORT).show();
@@ -159,6 +155,7 @@ public class GenerateQRActivity extends AppCompatActivity {
                         data.put("lecturerId", lecturerId);
                         data.put("latitude", location.getLatitude());
                         data.put("longitude", location.getLongitude());
+                        data.put("attendees", new HashMap<>()); // Empty attendees list
 
                         if (sessionId != null) {
                             sessionRef.child(sessionId).setValue(data)

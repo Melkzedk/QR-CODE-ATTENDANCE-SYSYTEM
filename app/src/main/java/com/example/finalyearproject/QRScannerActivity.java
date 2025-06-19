@@ -1,6 +1,13 @@
+// ✅ Updated QRScannerActivity.java and GenerateQRActivity.java to ensure correct attendance marking and QR generation
+// 1. Ensures exact timestamp consistency.
+// 2. Prevents duplicate attendance marking.
+// 3. Shows circular progress dialog.
+
+// 🔄 QRScannerActivity.java
 package com.example.finalyearproject;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -28,7 +35,7 @@ public class QRScannerActivity extends AppCompatActivity {
 
     private DecoratedBarcodeView barcodeScannerView;
     private FirebaseAuth mAuth;
-    private DatabaseReference dbRef;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,20 +44,20 @@ public class QRScannerActivity extends AppCompatActivity {
 
         barcodeScannerView = findViewById(R.id.barcode_scanner);
         mAuth = FirebaseAuth.getInstance();
-        dbRef = FirebaseDatabase.getInstance().getReference("Attendance");
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST);
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Marking attendance...");
+        progressDialog.setCancelable(false);
+        progressDialog.setIndeterminate(true);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST);
         } else {
             startScanner();
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST);
         }
     }
 
@@ -62,11 +69,14 @@ public class QRScannerActivity extends AppCompatActivity {
     private final BarcodeCallback callback = new BarcodeCallback() {
         @Override
         public void barcodeResult(BarcodeResult result) {
+            progressDialog.show();
+
             String qrData = result.getText();
             String uid = mAuth.getCurrentUser().getUid();
 
             String[] parts = qrData.split("\\|");
             if (parts.length != 2) {
+                progressDialog.dismiss();
                 Toast.makeText(QRScannerActivity.this, "Invalid QR format", Toast.LENGTH_SHORT).show();
                 finish();
                 return;
@@ -76,77 +86,84 @@ public class QRScannerActivity extends AppCompatActivity {
             long qrTimestamp = Long.parseLong(parts[1]);
 
             LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            if (ContextCompat.checkSelfPermission(QRScannerActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(QRScannerActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 Location studentLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                if (studentLocation != null) {
-                    FirebaseDatabase.getInstance().getReference("attendance_sessions")
-                            .get().addOnSuccessListener(snapshot -> {
-                                boolean valid = false;
-                                for (DataSnapshot s : snapshot.getChildren()) {
-                                    String dbCourseCode = s.child("courseCode").getValue(String.class);
-                                    Long dbTimestamp = s.child("timestamp").getValue(Long.class);
-                                    Double lat = s.child("latitude").getValue(Double.class);
-                                    Double lng = s.child("longitude").getValue(Double.class);
-
-                                    if (dbCourseCode != null && dbTimestamp != null && lat != null && lng != null &&
-                                            dbCourseCode.equals(courseCode) &&
-                                            Math.abs(dbTimestamp - qrTimestamp) <= 60000) {
-                                        Location lecturerLocation = new Location("");
-                                        lecturerLocation.setLatitude(lat);
-                                        lecturerLocation.setLongitude(lng);
-
-                                        float distance = studentLocation.distanceTo(lecturerLocation);
-
-                                        if (distance <= 50) {
-                                            valid = true;
-
-                                            // Fetch user details from "Users"
-                                            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
-                                            userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                @Override
-                                                public void onDataChange(@NonNull DataSnapshot userSnap) {
-                                                    if (userSnap.exists()) {
-                                                        String name = userSnap.child("name").getValue(String.class);
-                                                        String regNumber = userSnap.child("regNumber").getValue(String.class);
-
-                                                        StudentAttendance attendance = new StudentAttendance(name, regNumber, System.currentTimeMillis());
-
-                                                        DatabaseReference attendancePath = dbRef.child(courseCode)
-                                                                .child(String.valueOf(qrTimestamp)).child(uid);
-
-                                                        attendancePath.setValue(attendance)
-                                                                .addOnSuccessListener(aVoid ->
-                                                                        Toast.makeText(QRScannerActivity.this, "Attendance marked!", Toast.LENGTH_SHORT).show())
-                                                                .addOnFailureListener(e ->
-                                                                        Toast.makeText(QRScannerActivity.this, "Failed to mark attendance.", Toast.LENGTH_SHORT).show());
-                                                    } else {
-                                                        Toast.makeText(QRScannerActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                                                    }
-                                                    finish();
-                                                }
-
-                                                @Override
-                                                public void onCancelled(@NonNull DatabaseError error) {
-                                                    Toast.makeText(QRScannerActivity.this, "Error fetching user data.", Toast.LENGTH_SHORT).show();
-                                                    finish();
-                                                }
-                                            });
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if (!valid) {
-                                    Toast.makeText(QRScannerActivity.this, "You are too far or QR expired.", Toast.LENGTH_SHORT).show();
-                                    finish();
-                                }
-                            });
-                } else {
+                if (studentLocation == null) {
+                    progressDialog.dismiss();
                     Toast.makeText(QRScannerActivity.this, "Unable to get your location.", Toast.LENGTH_SHORT).show();
                     finish();
+                    return;
                 }
+
+                FirebaseDatabase.getInstance().getReference("attendance_sessions")
+                        .get().addOnSuccessListener(snapshot -> {
+                            for (DataSnapshot s : snapshot.getChildren()) {
+                                String dbCourseCode = s.child("courseCode").getValue(String.class);
+                                Long dbTimestamp = s.child("timestamp").getValue(Long.class);
+                                Double lat = s.child("latitude").getValue(Double.class);
+                                Double lng = s.child("longitude").getValue(Double.class);
+
+                                if (dbCourseCode != null && dbTimestamp != null && lat != null && lng != null &&
+                                        dbCourseCode.equals(courseCode) &&
+                                        Math.abs(dbTimestamp - qrTimestamp) <= 60000) {
+
+                                    Location lecturerLocation = new Location("");
+                                    lecturerLocation.setLatitude(lat);
+                                    lecturerLocation.setLongitude(lng);
+                                    float distance = studentLocation.distanceTo(lecturerLocation);
+
+                                    if (distance <= 50) {
+                                        String sessionId = s.getKey();
+                                        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
+                                        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot userSnap) {
+                                                progressDialog.dismiss();
+                                                if (userSnap.exists()) {
+                                                    String regNumber = userSnap.child("regNumber").getValue(String.class);
+                                                    DatabaseReference attendanceRef = FirebaseDatabase.getInstance().getReference("attendance_sessions").child(sessionId).child("attendees");
+
+                                                    attendanceRef.child(regNumber).addListenerForSingleValueEvent(new ValueEventListener() {
+                                                        @Override
+                                                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                                            if (snapshot.exists()) {
+                                                                Toast.makeText(QRScannerActivity.this, "Already marked attendance.", Toast.LENGTH_LONG).show();
+                                                            } else {
+                                                                attendanceRef.child(regNumber).setValue(true);
+                                                                Toast.makeText(QRScannerActivity.this, "✅ Attendance marked!", Toast.LENGTH_SHORT).show();
+                                                            }
+                                                            finish();
+                                                        }
+
+                                                        @Override
+                                                        public void onCancelled(@NonNull DatabaseError error) {
+                                                            Toast.makeText(QRScannerActivity.this, "Error marking attendance.", Toast.LENGTH_SHORT).show();
+                                                            finish();
+                                                        }
+                                                    });
+                                                } else {
+                                                    Toast.makeText(QRScannerActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                                                    finish();
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError error) {
+                                                progressDialog.dismiss();
+                                                Toast.makeText(QRScannerActivity.this, "Error loading user.", Toast.LENGTH_SHORT).show();
+                                                finish();
+                                            }
+                                        });
+                                        return;
+                                    }
+                                }
+                            }
+                            progressDialog.dismiss();
+                            Toast.makeText(QRScannerActivity.this, "❌ Too far or QR expired.", Toast.LENGTH_LONG).show();
+                            finish();
+                        });
             } else {
+                progressDialog.dismiss();
                 Toast.makeText(QRScannerActivity.this, "Location permission not granted.", Toast.LENGTH_SHORT).show();
                 finish();
             }
@@ -171,8 +188,7 @@ public class QRScannerActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == CAMERA_PERMISSION_REQUEST && grantResults.length > 0 &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == CAMERA_PERMISSION_REQUEST && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             startScanner();
         }
     }

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -53,7 +54,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ✅ Corrected session handling
+        // ✅ Load from SharedPreferences
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userType = prefs.getString("userType", null);
         regNumber = prefs.getString("userId", null);
@@ -79,7 +80,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
         }
 
-        // 🔐 Request POST_NOTIFICATIONS permission
+        // 🔐 Request Notification Permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -89,6 +90,12 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
         }
 
+        // 🌐 Firebase Refs
+        coursesRef = FirebaseDatabase.getInstance().getReference("courses");
+        attendanceRef = FirebaseDatabase.getInstance().getReference("Attendance");
+        usersRef = FirebaseDatabase.getInstance().getReference("Users/Students");
+
+        // 🔗 UI References
         subjectDropdown = findViewById(R.id.subjectDropdown);
         attendanceValue = findViewById(R.id.attendanceValue);
         btnSubmitSubject = findViewById(R.id.btnSubmitSubject);
@@ -96,6 +103,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
         navigationView = findViewById(R.id.navigation_view);
         toolbar = findViewById(R.id.toolbar);
 
+        // 🧭 Toolbar & Drawer
         if (toolbar != null) {
             setSupportActionBar(toolbar);
         }
@@ -114,20 +122,27 @@ public class StudentDashboardActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, courseDisplayList);
         subjectDropdown.setAdapter(adapter);
 
-        coursesRef = FirebaseDatabase.getInstance().getReference("courses");
-        attendanceRef = FirebaseDatabase.getInstance().getReference("Attendance");
-        usersRef = FirebaseDatabase.getInstance().getReference("Users/Students");
-
+        // 🔃 Load initial data
         fetchCourses();
         loadProfileHeader();
 
+        // 📌 Submit Button Logic
         btnSubmitSubject.setOnClickListener(v -> {
             String selectedDisplay = subjectDropdown.getText().toString().trim();
-            if (!displayToCodeMap.containsKey(selectedDisplay)) {
-                Toast.makeText(this, "Please select a valid subject", Toast.LENGTH_SHORT).show();
+
+            if (selectedDisplay.isEmpty()) {
+                Toast.makeText(this, "Please select a subject", Toast.LENGTH_SHORT).show();
                 return;
             }
+
+            if (!displayToCodeMap.containsKey(selectedDisplay)) {
+                Toast.makeText(this, "Invalid subject selected", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             String courseCode = displayToCodeMap.get(selectedDisplay);
+            Toast.makeText(this, "Fetching attendance for " + courseCode, Toast.LENGTH_SHORT).show();
+            Log.d("StudentDashboard", "Fetching attendance for course: " + courseCode);
             fetchAttendancePercentage(courseCode);
         });
 
@@ -181,6 +196,8 @@ public class StudentDashboardActivity extends AppCompatActivity {
                     long percent = (attended * 100) / totalSessions;
                     attendanceValue.setText(percent + "%");
                 }
+
+                Toast.makeText(StudentDashboardActivity.this, "Attendance loaded", Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -208,9 +225,8 @@ public class StudentDashboardActivity extends AppCompatActivity {
                                 profileName.setText(name != null ? name : "Student");
                                 profileEmail.setText(email != null ? email : "");
 
-                                profileImage.setOnClickListener(v -> {
-                                    Toast.makeText(StudentDashboardActivity.this, "Image picker not yet implemented", Toast.LENGTH_SHORT).show();
-                                });
+                                profileImage.setOnClickListener(v ->
+                                        Toast.makeText(StudentDashboardActivity.this, "Image picker not yet implemented", Toast.LENGTH_SHORT).show());
                             }
                         }
                     }
@@ -252,7 +268,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 } else if (itemId == R.id.nav_submit_assignment) {
                     startActivity(new Intent(this, SubmitAssignmentActivity.class));
                 } else if (itemId == R.id.nav_logout) {
-                    // ✅ Clear saved session and logout
                     SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
                     prefs.edit().clear().apply();
 
@@ -276,7 +291,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Notifications will be disabled unless permission is granted", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Notifications disabled unless permission is granted", Toast.LENGTH_LONG).show();
             }
         }
     }
