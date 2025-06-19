@@ -3,6 +3,7 @@ package com.example.finalyearproject;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -46,15 +47,20 @@ public class StudentDashboardActivity extends AppCompatActivity {
     NavigationView navigationView;
     Toolbar toolbar;
 
-    String regNumber; // 🔑 Holds passed reg number
+    String regNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_dashboard);
 
-        // 🔐 Get passed regNumber from LoginActivity
-        regNumber = getIntent().getStringExtra("regNumber");
+        // ✅ Load regNumber from SharedPreferences or Intent
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        regNumber = prefs.getString("regNumber", null);
+        if (regNumber == null || regNumber.isEmpty()) {
+            regNumber = getIntent().getStringExtra("regNumber");
+        }
+
         if (regNumber == null || regNumber.isEmpty()) {
             Toast.makeText(this, "No user info found. Please login again.", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, LoginActivity.class));
@@ -106,7 +112,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
         }
 
         attendanceValue.setText("0%");
-
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, courseDisplayList);
         subjectDropdown.setAdapter(adapter);
 
@@ -115,7 +120,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
         usersRef = FirebaseDatabase.getInstance().getReference("Users/Students");
 
         fetchCourses();
-        loadProfileHeader(); // 👤 show student name/email in nav drawer
+        loadProfileHeader();
 
         btnSubmitSubject.setOnClickListener(v -> {
             String selectedDisplay = subjectDropdown.getText().toString().trim();
@@ -248,7 +253,13 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 } else if (itemId == R.id.nav_submit_assignment) {
                     startActivity(new Intent(this, SubmitAssignmentActivity.class));
                 } else if (itemId == R.id.nav_logout) {
-                    startActivity(new Intent(this, LoginActivity.class));
+                    // ✅ Clear saved session and logout
+                    SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                    prefs.edit().clear().apply();
+
+                    Intent intent = new Intent(this, LoginActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
                     finish();
                 }
 

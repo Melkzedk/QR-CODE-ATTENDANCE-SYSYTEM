@@ -1,6 +1,7 @@
 package com.example.finalyearproject;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -75,8 +76,12 @@ public class LoginActivity extends AppCompatActivity {
                                                         String dbPass = data.child("password").getValue(String.class);
                                                         if (dbPass != null && dbPass.equals(pass)) {
                                                             Toast.makeText(LoginActivity.this, "Student login successful", Toast.LENGTH_SHORT).show();
+
+                                                            // ✅ Save regNumber to SharedPreferences
+                                                            SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                                                            prefs.edit().putString("regNumber", reg).apply();
+
                                                             Intent intent = new Intent(LoginActivity.this, StudentDashboardActivity.class);
-                                                            intent.putExtra("regNumber", reg);
                                                             startActivity(intent);
                                                             finish();
                                                             return;

@@ -2,6 +2,7 @@ package com.example.finalyearproject;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
@@ -11,7 +12,6 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -19,7 +19,6 @@ import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class SubmitAssignmentActivity extends AppCompatActivity {
 
@@ -27,11 +26,22 @@ public class SubmitAssignmentActivity extends AppCompatActivity {
     private Uri fileUri;
     private TextView selectedFileText;
     private Button chooseFileBtn, uploadFileBtn;
+    private String regNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_submit_assignment);
+
+        // ✅ Load regNumber from SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        regNumber = prefs.getString("regNumber", null);
+
+        if (regNumber == null || regNumber.isEmpty()) {
+            Toast.makeText(this, "User not logged in. Missing regNumber.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
 
         selectedFileText = findViewById(R.id.selectedFileText);
         chooseFileBtn = findViewById(R.id.chooseFileBtn);
@@ -61,6 +71,9 @@ public class SubmitAssignmentActivity extends AppCompatActivity {
         if (requestCode == PICK_FILE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             fileUri = data.getData();
             selectedFileText.setText("Selected: " + fileUri.getLastPathSegment());
+            Toast.makeText(this, "File selected", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -69,9 +82,8 @@ public class SubmitAssignmentActivity extends AppCompatActivity {
         progressDialog.setTitle("Uploading...");
         progressDialog.show();
 
-        String userId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
         String timestamp = String.valueOf(System.currentTimeMillis());
-        String fileName = "assignments/" + userId + "_" + timestamp;
+        String fileName = "assignments/" + regNumber + "_" + timestamp;
 
         StorageReference storageRef = FirebaseStorage.getInstance().getReference().child(fileName);
 
@@ -80,34 +92,34 @@ public class SubmitAssignmentActivity extends AppCompatActivity {
                     storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                         progressDialog.dismiss();
                         String downloadUrl = uri.toString();
+                        Toast.makeText(this, "Upload successful!", Toast.LENGTH_SHORT).show();
 
-                        // ✅ Optional: Save file info to Realtime Database
+                        // Save to Realtime Database
                         DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference("submissions");
                         Map<String, Object> fileData = new HashMap<>();
                         fileData.put("fileUrl", downloadUrl);
                         fileData.put("fileName", fileUri.getLastPathSegment());
                         fileData.put("timestamp", timestamp);
 
-                        dbRef.child(userId).setValue(fileData)
+                        dbRef.child(regNumber).setValue(fileData)
                                 .addOnCompleteListener(task -> {
                                     if (task.isSuccessful()) {
-                                        Toast.makeText(this, "File uploaded and saved!", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(this, "File saved in DB!", Toast.LENGTH_SHORT).show();
                                         selectedFileText.setText("Upload complete.");
                                     } else {
-                                        Toast.makeText(this, "Upload succeeded, but database failed.", Toast.LENGTH_LONG).show();
+                                        Toast.makeText(this, "Failed to save to DB", Toast.LENGTH_LONG).show();
                                     }
                                 });
 
                     }).addOnFailureListener(e -> {
                         progressDialog.dismiss();
-                        Toast.makeText(this, "Upload succeeded but failed to get download URL: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "Failed to get file URL: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     });
 
                 })
                 .addOnFailureListener(e -> {
                     progressDialog.dismiss();
                     Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
                 })
                 .addOnProgressListener(snapshot -> {
                     double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
