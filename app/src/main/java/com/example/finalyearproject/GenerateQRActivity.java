@@ -1,9 +1,12 @@
 package com.example.finalyearproject;
 
 import android.Manifest;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -17,10 +20,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.*;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
@@ -37,7 +37,6 @@ public class GenerateQRActivity extends AppCompatActivity {
     private Button generateQRButton;
     private ImageView qrImageView;
 
-    private FirebaseAuth mAuth;
     private DatabaseReference dbRef;
 
     private ArrayList<String> courseList = new ArrayList<>();
@@ -46,16 +45,30 @@ public class GenerateQRActivity extends AppCompatActivity {
     private static final int LOCATION_PERMISSION_REQUEST = 102;
     private FusedLocationProviderClient fusedLocationClient;
 
+    private String lecturerId;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Session check
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String userType = prefs.getString("userType", null);
+        lecturerId = prefs.getString("userId", null);
+
+        if (userType == null || lecturerId == null || !userType.equals("lecturer")) {
+            Toast.makeText(this, "Unauthorized. Please login.", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_generate_qr);
 
         courseSpinner = findViewById(R.id.courseSpinner);
         generateQRButton = findViewById(R.id.generateQRButton);
         qrImageView = findViewById(R.id.qrImageView);
 
-        mAuth = FirebaseAuth.getInstance();
         dbRef = FirebaseDatabase.getInstance().getReference("courses");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -112,7 +125,11 @@ public class GenerateQRActivity extends AppCompatActivity {
         String selectedDisplayName = courseSpinner.getSelectedItem().toString();
         String courseCode = courseCodeMap.get(selectedDisplayName);
         long timestamp = System.currentTimeMillis();
-        String qrData = courseCode + "|" + timestamp;
+
+        if (courseCode == null) {
+            Toast.makeText(this, "Course code is missing", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -122,37 +139,56 @@ public class GenerateQRActivity extends AppCompatActivity {
 
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(location -> {
-                    if (location != null) {
-                        try {
-                            BarcodeEncoder encoder = new BarcodeEncoder();
-                            Bitmap bitmap = encoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 400, 400);
-                            qrImageView.setImageBitmap(bitmap);
-
-                            DatabaseReference sessionRef = FirebaseDatabase.getInstance().getReference("attendance_sessions");
-                            String sessionId = sessionRef.push().getKey();
-
-                            Map<String, Object> data = new HashMap<>();
-                            data.put("courseCode", courseCode);
-                            data.put("timestamp", timestamp);
-                            data.put("lecturerId", mAuth.getCurrentUser().getUid());
-                            data.put("latitude", location.getLatitude());
-                            data.put("longitude", location.getLongitude());
-
-                            if (sessionId != null) {
-                                sessionRef.child(sessionId).setValue(data)
-                                        .addOnSuccessListener(aVoid -> Toast.makeText(this, "QR data saved", Toast.LENGTH_SHORT).show())
-                                        .addOnFailureListener(e -> Toast.makeText(this, "Failed to save QR data", Toast.LENGTH_SHORT).show());
-                            }
-
-                        } catch (WriterException e) {
-                            Toast.makeText(this, "QR Generation failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(this, "Unable to get location. Make sure GPS is enabled.", Toast.LENGTH_SHORT).show();
+                    if (location == null) {
+                        Toast.makeText(this, "Unable to get location.", Toast.LENGTH_SHORT).show();
+                        return;
                     }
+
+                    try {
+                        String qrData = courseCode + "|" + timestamp;
+                        BarcodeEncoder encoder = new BarcodeEncoder();
+                        Bitmap bitmap = encoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 400, 400);
+                        qrImageView.setImageBitmap(bitmap);
+
+                        DatabaseReference sessionRef = FirebaseDatabase.getInstance().getReference("attendance_sessions");
+                        String sessionId = sessionRef.push().getKey();
+
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("courseCode", courseCode);
+                        data.put("timestamp", timestamp);
+                        data.put("lecturerId", lecturerId);
+                        data.put("latitude", location.getLatitude());
+                        data.put("longitude", location.getLongitude());
+
+                        if (sessionId != null) {
+                            sessionRef.child(sessionId).setValue(data)
+                                    .addOnSuccessListener(aVoid ->
+                                            Toast.makeText(this, "QR data saved", Toast.LENGTH_SHORT).show())
+                                    .addOnFailureListener(e ->
+                                            Toast.makeText(this, "Failed to save QR data", Toast.LENGTH_SHORT).show());
+                        } else {
+                            Toast.makeText(this, "Failed to generate session ID", Toast.LENGTH_SHORT).show();
+                        }
+
+                    } catch (WriterException e) {
+                        Toast.makeText(this, "QR Generation failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Location fetch failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Location fetch failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

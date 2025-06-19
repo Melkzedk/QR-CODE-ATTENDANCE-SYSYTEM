@@ -52,21 +52,20 @@ public class StudentDashboardActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_student_dashboard);
 
-        // ✅ Load regNumber from SharedPreferences or Intent
+        // ✅ Corrected session handling
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        regNumber = prefs.getString("regNumber", null);
-        if (regNumber == null || regNumber.isEmpty()) {
-            regNumber = getIntent().getStringExtra("regNumber");
-        }
+        String userType = prefs.getString("userType", null);
+        regNumber = prefs.getString("userId", null);
 
-        if (regNumber == null || regNumber.isEmpty()) {
-            Toast.makeText(this, "No user info found. Please login again.", Toast.LENGTH_SHORT).show();
+        if (userType == null || !userType.equals("student") || regNumber == null || regNumber.isEmpty()) {
+            Toast.makeText(this, "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
+
+        setContentView(R.layout.activity_student_dashboard);
 
         // 🔔 Create Notification Channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

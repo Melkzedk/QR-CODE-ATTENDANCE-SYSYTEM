@@ -43,6 +43,7 @@ public class LoginActivity extends AppCompatActivity {
 
             // Admin login
             if (reg.equalsIgnoreCase("admin") && pass.equals("admin123")) {
+                saveSession("admin", "admin");
                 Toast.makeText(this, "Admin login successful", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, AdminDashboardActivity.class));
                 finish();
@@ -58,6 +59,7 @@ public class LoginActivity extends AppCompatActivity {
                                 for (DataSnapshot data : snapshot.getChildren()) {
                                     String dbPass = data.child("password").getValue(String.class);
                                     if (dbPass != null && dbPass.equals(pass)) {
+                                        saveSession("lecturer", reg);
                                         Toast.makeText(LoginActivity.this, "Lecturer login successful", Toast.LENGTH_SHORT).show();
                                         startActivity(new Intent(LoginActivity.this, LecturerDashboardActivity.class));
                                         finish();
@@ -75,21 +77,16 @@ public class LoginActivity extends AppCompatActivity {
                                                     for (DataSnapshot data : snapshot.getChildren()) {
                                                         String dbPass = data.child("password").getValue(String.class);
                                                         if (dbPass != null && dbPass.equals(pass)) {
+                                                            saveSession("student", reg);
                                                             Toast.makeText(LoginActivity.this, "Student login successful", Toast.LENGTH_SHORT).show();
-
-                                                            // ✅ Save regNumber to SharedPreferences
-                                                            SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                                                            prefs.edit().putString("regNumber", reg).apply();
-
-                                                            Intent intent = new Intent(LoginActivity.this, StudentDashboardActivity.class);
-                                                            startActivity(intent);
+                                                            startActivity(new Intent(LoginActivity.this, StudentDashboardActivity.class));
                                                             finish();
                                                             return;
                                                         }
                                                     }
                                                     Toast.makeText(LoginActivity.this, "Wrong password for student", Toast.LENGTH_SHORT).show();
                                                 } else {
-                                                    Toast.makeText(LoginActivity.this, "No user found with provided ID/RegNumber", Toast.LENGTH_SHORT).show();
+                                                    Toast.makeText(LoginActivity.this, "No user found", Toast.LENGTH_SHORT).show();
                                                 }
                                             }
 
@@ -109,9 +106,16 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         registerRedirect.setOnClickListener(v -> {
-            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
             finish();
         });
+    }
+
+    private void saveSession(String userType, String id) {
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        prefs.edit()
+                .putString("userType", userType)
+                .putString("userId", id)
+                .apply();
     }
 }
