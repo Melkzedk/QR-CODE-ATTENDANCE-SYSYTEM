@@ -1,9 +1,3 @@
-// ✅ Updated QRScannerActivity.java and GenerateQRActivity.java to ensure correct attendance marking and QR generation
-// 1. Ensures exact timestamp consistency.
-// 2. Prevents duplicate attendance marking.
-// 3. Shows circular progress dialog.
-
-// 🔄 QRScannerActivity.java
 package com.example.finalyearproject;
 
 import android.Manifest;
@@ -82,86 +76,121 @@ public class QRScannerActivity extends AppCompatActivity {
                 return;
             }
 
-            String courseCode = parts[0];
-            long qrTimestamp = Long.parseLong(parts[1]);
+            String sessionId = parts[0];
+            long qrTimestamp;
+
+            try {
+                qrTimestamp = Long.parseLong(parts[1]);
+            } catch (NumberFormatException e) {
+                progressDialog.dismiss();
+                Toast.makeText(QRScannerActivity.this, "Invalid timestamp", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
 
             LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             if (ContextCompat.checkSelfPermission(QRScannerActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 Location studentLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                 if (studentLocation == null) {
                     progressDialog.dismiss();
-                    Toast.makeText(QRScannerActivity.this, "Unable to get your location.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(QRScannerActivity.this, "Unable to get location.", Toast.LENGTH_SHORT).show();
                     finish();
                     return;
                 }
 
-                FirebaseDatabase.getInstance().getReference("attendance_sessions")
-                        .get().addOnSuccessListener(snapshot -> {
-                            for (DataSnapshot s : snapshot.getChildren()) {
-                                String dbCourseCode = s.child("courseCode").getValue(String.class);
-                                Long dbTimestamp = s.child("timestamp").getValue(Long.class);
-                                Double lat = s.child("latitude").getValue(Double.class);
-                                Double lng = s.child("longitude").getValue(Double.class);
+                DatabaseReference sessionRef = FirebaseDatabase.getInstance().getReference("attendance_sessions").child(sessionId);
+                sessionRef.get().addOnSuccessListener(snap -> {
+                    if (!snap.exists()) {
+                        progressDialog.dismiss();
+                        Toast.makeText(QRScannerActivity.this, "Session not found.", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
 
-                                if (dbCourseCode != null && dbTimestamp != null && lat != null && lng != null &&
-                                        dbCourseCode.equals(courseCode) &&
-                                        Math.abs(dbTimestamp - qrTimestamp) <= 60000) {
+                    Long dbTimestamp = snap.child("timestamp").getValue(Long.class);
+                    Double lat = snap.child("latitude").getValue(Double.class);
+                    Double lng = snap.child("longitude").getValue(Double.class);
 
-                                    Location lecturerLocation = new Location("");
-                                    lecturerLocation.setLatitude(lat);
-                                    lecturerLocation.setLongitude(lng);
-                                    float distance = studentLocation.distanceTo(lecturerLocation);
+                    if (dbTimestamp == null || lat == null || lng == null) {
+                        progressDialog.dismiss();
+                        Toast.makeText(QRScannerActivity.this, "Incomplete session data.", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
 
-                                    if (distance <= 50) {
-                                        String sessionId = s.getKey();
-                                        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(uid);
-                                        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                            @Override
-                                            public void onDataChange(@NonNull DataSnapshot userSnap) {
-                                                progressDialog.dismiss();
-                                                if (userSnap.exists()) {
-                                                    String regNumber = userSnap.child("regNumber").getValue(String.class);
-                                                    DatabaseReference attendanceRef = FirebaseDatabase.getInstance().getReference("attendance_sessions").child(sessionId).child("attendees");
+                    // Check time validity
+                    if (Math.abs(dbTimestamp - qrTimestamp) > 60000) {
+                        progressDialog.dismiss();
+                        Toast.makeText(QRScannerActivity.this, "QR expired.", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
 
-                                                    attendanceRef.child(regNumber).addListenerForSingleValueEvent(new ValueEventListener() {
-                                                        @Override
-                                                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                                            if (snapshot.exists()) {
-                                                                Toast.makeText(QRScannerActivity.this, "Already marked attendance.", Toast.LENGTH_LONG).show();
-                                                            } else {
-                                                                attendanceRef.child(regNumber).setValue(true);
-                                                                Toast.makeText(QRScannerActivity.this, "✅ Attendance marked!", Toast.LENGTH_SHORT).show();
-                                                            }
-                                                            finish();
-                                                        }
+                    // Check location proximity
+                    Location lecturerLocation = new Location("");
+                    lecturerLocation.setLatitude(lat);
+                    lecturerLocation.setLongitude(lng);
+                    float distance = studentLocation.distanceTo(lecturerLocation);
 
-                                                        @Override
-                                                        public void onCancelled(@NonNull DatabaseError error) {
-                                                            Toast.makeText(QRScannerActivity.this, "Error marking attendance.", Toast.LENGTH_SHORT).show();
-                                                            finish();
-                                                        }
-                                                    });
-                                                } else {
-                                                    Toast.makeText(QRScannerActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                                                    finish();
-                                                }
-                                            }
+                    if (distance > 50) {
+                        progressDialog.dismiss();
+                        Toast.makeText(QRScannerActivity.this, "You are too far from the class.", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
 
-                                            @Override
-                                            public void onCancelled(@NonNull DatabaseError error) {
-                                                progressDialog.dismiss();
-                                                Toast.makeText(QRScannerActivity.this, "Error loading user.", Toast.LENGTH_SHORT).show();
-                                                finish();
-                                            }
-                                        });
-                                        return;
-                                    }
-                                }
-                            }
+                    // Fetch student regNumber from Users/Students/uid
+                    DatabaseReference userRef = FirebaseDatabase.getInstance()
+                            .getReference("Users/Students").child(uid);
+
+                    userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot userSnap) {
                             progressDialog.dismiss();
-                            Toast.makeText(QRScannerActivity.this, "❌ Too far or QR expired.", Toast.LENGTH_LONG).show();
+                            if (!userSnap.exists()) {
+                                Toast.makeText(QRScannerActivity.this, "Student not found.", Toast.LENGTH_SHORT).show();
+                                finish();
+                                return;
+                            }
+
+                            String regNumber = userSnap.child("regNumber").getValue(String.class);
+                            if (regNumber == null) {
+                                Toast.makeText(QRScannerActivity.this, "Missing regNumber.", Toast.LENGTH_SHORT).show();
+                                finish();
+                                return;
+                            }
+
+                            DatabaseReference attendanceRef = sessionRef.child("attendees");
+
+                            attendanceRef.child(regNumber).addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                    if (snapshot.exists()) {
+                                        Toast.makeText(QRScannerActivity.this, "Already marked.", Toast.LENGTH_LONG).show();
+                                    } else {
+                                        attendanceRef.child(regNumber).setValue(true);
+                                        Toast.makeText(QRScannerActivity.this, "✅ Attendance marked!", Toast.LENGTH_SHORT).show();
+                                    }
+                                    finish();
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) {
+                                    Toast.makeText(QRScannerActivity.this, "Error saving attendance.", Toast.LENGTH_SHORT).show();
+                                    finish();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            progressDialog.dismiss();
+                            Toast.makeText(QRScannerActivity.this, "Error loading student.", Toast.LENGTH_SHORT).show();
                             finish();
-                        });
+                        }
+                    });
+                });
+
             } else {
                 progressDialog.dismiss();
                 Toast.makeText(QRScannerActivity.this, "Location permission not granted.", Toast.LENGTH_SHORT).show();
@@ -170,7 +199,8 @@ public class QRScannerActivity extends AppCompatActivity {
         }
 
         @Override
-        public void possibleResultPoints(List<ResultPoint> resultPoints) {}
+        public void possibleResultPoints(List<ResultPoint> resultPoints) {
+        }
     };
 
     @Override
