@@ -1,4 +1,3 @@
-// Updated GenerateQRActivity.java
 package com.example.finalyearproject;
 
 import android.Manifest;
@@ -155,22 +154,22 @@ public class GenerateQRActivity extends AppCompatActivity {
                     data.put("lecturerId", lecturerId);
                     data.put("latitude", location.getLatitude());
                     data.put("longitude", location.getLongitude());
-                    data.put("attendees", new HashMap<>()); // ✅ Prepares field for attendance
+                    data.put("attendees", new HashMap<>()); // Ensure attendees is initialized
 
                     sessionRef.child(sessionId).setValue(data)
                             .addOnSuccessListener(aVoid -> {
                                 try {
-                                    String qrData = sessionId + "|" + timestamp; // ✅ Use sessionId in QR
+                                    String qrData = sessionId + "|" + timestamp;
                                     BarcodeEncoder encoder = new BarcodeEncoder();
                                     Bitmap bitmap = encoder.encodeBitmap(qrData, BarcodeFormat.QR_CODE, 400, 400);
                                     qrImageView.setImageBitmap(bitmap);
-                                    Toast.makeText(this, "QR data saved", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(this, "✅ QR generated successfully!", Toast.LENGTH_SHORT).show();
                                 } catch (WriterException e) {
                                     Toast.makeText(this, "QR Generation failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                 }
                             })
                             .addOnFailureListener(e ->
-                                    Toast.makeText(this, "Failed to save QR data", Toast.LENGTH_SHORT).show());
+                                    Toast.makeText(this, "❌ Failed to save QR data", Toast.LENGTH_SHORT).show());
 
                 })
                 .addOnFailureListener(e ->
