@@ -8,6 +8,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -15,6 +17,8 @@ public class AddStudentActivity extends AppCompatActivity {
 
     EditText studentName, regNumber, studentEmail, studentDepartment, studentCourse, studentPassword;
     Button addStudentBtn;
+
+    FirebaseAuth mAuth;
     DatabaseReference studentsRef;
 
     @Override
@@ -30,7 +34,8 @@ public class AddStudentActivity extends AppCompatActivity {
         studentPassword = findViewById(R.id.studentPassword);
         addStudentBtn = findViewById(R.id.addStudentBtn);
 
-        studentsRef = FirebaseDatabase.getInstance().getReference("Users/Students");
+        mAuth = FirebaseAuth.getInstance();
+        studentsRef = FirebaseDatabase.getInstance().getReference("Users").child("Students");
 
         addStudentBtn.setOnClickListener(v -> {
             String name = studentName.getText().toString().trim();
@@ -46,21 +51,38 @@ public class AddStudentActivity extends AppCompatActivity {
                 return;
             }
 
-            String studentId = studentsRef.push().getKey();
-            Student student = new Student(studentId, name, reg, email, dept, course, password, "deactivated");
+            String authEmail = reg + "@qrcode.edu"; // Simulated email for FirebaseAuth
 
-            studentsRef.child(studentId).setValue(student)
+            mAuth.createUserWithEmailAndPassword(authEmail, password)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(this, "Student added successfully", Toast.LENGTH_SHORT).show();
-                            studentName.setText("");
-                            regNumber.setText("");
-                            studentEmail.setText("");
-                            studentDepartment.setText("");
-                            studentCourse.setText("");
-                            studentPassword.setText("");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            if (user == null) {
+                                Toast.makeText(this, "Failed to get user details", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+
+                            String uid = user.getUid();
+
+                            Student student = new Student(uid, name, reg, email, dept, course, password, "deactivated");
+
+                            studentsRef.child(uid).setValue(student)
+                                    .addOnCompleteListener(saveTask -> {
+                                        if (saveTask.isSuccessful()) {
+                                            Toast.makeText(this, "✅ Student added successfully", Toast.LENGTH_SHORT).show();
+                                            studentName.setText("");
+                                            regNumber.setText("");
+                                            studentEmail.setText("");
+                                            studentDepartment.setText("");
+                                            studentCourse.setText("");
+                                            studentPassword.setText("");
+                                        } else {
+                                            Toast.makeText(this, "❌ Failed to save to database", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+
                         } else {
-                            Toast.makeText(this, "Failed to add student", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "❌ Auth error: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
                     });
         });
