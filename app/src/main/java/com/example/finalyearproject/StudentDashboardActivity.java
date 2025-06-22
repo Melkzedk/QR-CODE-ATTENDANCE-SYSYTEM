@@ -1,12 +1,13 @@
 package com.example.finalyearproject;
 
+import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -14,9 +15,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import android.Manifest;
-import android.content.pm.PackageManager;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -43,7 +41,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
     ArrayList<String> courseDisplayList = new ArrayList<>();
     Map<String, String> displayToCodeMap = new HashMap<>();
     ArrayAdapter<String> adapter;
-    DatabaseReference coursesRef, attendanceRef, usersRef;
+    DatabaseReference coursesRef, usersRef;
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     Toolbar toolbar;
@@ -54,7 +52,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ✅ Load from SharedPreferences
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userType = prefs.getString("userType", null);
         regNumber = prefs.getString("userId", null);
@@ -68,7 +65,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_student_dashboard);
 
-        // 🔔 Create Notification Channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     "class_channel", "Class Notifications",
@@ -80,7 +76,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
         }
 
-        // 🔐 Request Notification Permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -90,12 +85,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
         }
 
-        // 🌐 Firebase Refs
         coursesRef = FirebaseDatabase.getInstance().getReference("courses");
-        attendanceRef = FirebaseDatabase.getInstance().getReference("Attendance");
         usersRef = FirebaseDatabase.getInstance().getReference("Users/Students");
 
-        // 🔗 UI References
         subjectDropdown = findViewById(R.id.subjectDropdown);
         attendanceValue = findViewById(R.id.attendanceValue);
         btnSubmitSubject = findViewById(R.id.btnSubmitSubject);
@@ -103,7 +95,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
         navigationView = findViewById(R.id.navigation_view);
         toolbar = findViewById(R.id.toolbar);
 
-        // 🧭 Toolbar & Drawer
         if (toolbar != null) {
             setSupportActionBar(toolbar);
         }
@@ -122,11 +113,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, courseDisplayList);
         subjectDropdown.setAdapter(adapter);
 
-        // 🔃 Load initial data
         fetchCourses();
         loadProfileHeader();
 
-        // 📌 Submit Button Logic
         btnSubmitSubject.setOnClickListener(v -> {
             String selectedDisplay = subjectDropdown.getText().toString().trim();
 
@@ -141,8 +130,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
 
             String courseCode = displayToCodeMap.get(selectedDisplay);
-            Toast.makeText(this, "Fetching attendance for " + courseCode, Toast.LENGTH_SHORT).show();
-            Log.d("StudentDashboard", "Fetching attendance for course: " + courseCode);
             fetchAttendancePercentage(courseCode);
         });
 
@@ -177,32 +164,43 @@ public class StudentDashboardActivity extends AppCompatActivity {
     }
 
     private void fetchAttendancePercentage(String courseCode) {
-        attendanceRef.child(courseCode).addListenerForSingleValueEvent(new ValueEventListener() {
+        DatabaseReference sessionRef = FirebaseDatabase.getInstance().getReference("attendance_sessions");
+
+        sessionRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                long attended = 0;
-                long totalSessions = snapshot.getChildrenCount();
+                long totalSessions = 0;
+                long attendedSessions = 0;
 
-                for (DataSnapshot sessionSnapshot : snapshot.getChildren()) {
-                    Boolean isPresent = sessionSnapshot.child(regNumber).getValue(Boolean.class);
-                    if (Boolean.TRUE.equals(isPresent)) {
-                        attended++;
+                for (DataSnapshot session : snapshot.getChildren()) {
+                    String sessionCourseCode = session.child("courseCode").getValue(String.class);
+
+                    if (sessionCourseCode != null && sessionCourseCode.equals(courseCode)) {
+                        totalSessions++;
+
+                        DataSnapshot attendees = session.child("attendees");
+                        if (attendees.exists() && attendees.hasChild(regNumber)) {
+                            Boolean isPresent = attendees.child(regNumber).getValue(Boolean.class);
+                            if (Boolean.TRUE.equals(isPresent)) {
+                                attendedSessions++;
+                            }
+                        }
                     }
                 }
 
                 if (totalSessions == 0) {
                     attendanceValue.setText("0%");
+                    Toast.makeText(StudentDashboardActivity.this, "No sessions found for this subject", Toast.LENGTH_SHORT).show();
                 } else {
-                    long percent = (attended * 100) / totalSessions;
+                    long percent = (attendedSessions * 100) / totalSessions;
                     attendanceValue.setText(percent + "%");
+                    Toast.makeText(StudentDashboardActivity.this, "Attendance updated: " + percent + "%", Toast.LENGTH_SHORT).show();
                 }
-
-                Toast.makeText(StudentDashboardActivity.this, "Attendance loaded", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(StudentDashboardActivity.this, "Failed to fetch attendance", Toast.LENGTH_SHORT).show();
+                Toast.makeText(StudentDashboardActivity.this, "Error loading attendance", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -270,10 +268,8 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 } else if (itemId == R.id.nav_logout) {
                     SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
                     prefs.edit().clear().apply();
-
-                    Intent intent = new Intent(this, LoginActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
+                    startActivity(new Intent(this, LoginActivity.class)
+                            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
                     finish();
                 }
 
