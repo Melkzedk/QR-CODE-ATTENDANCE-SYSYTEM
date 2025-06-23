@@ -13,10 +13,27 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <!-- Spinner for Course Filter -->
+    <Spinner
+        android:id="@+id/courseFilterSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Export Button -->
+    <Button
+        android:id="@+id/exportBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Export to Excel"
+        android:layout_marginBottom="16dp" />
+
+    <!-- ListView for Attendance Data -->
     <ListView
         android:id="@+id/attendanceListView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:divider="@android:color/darker_gray"
         android:dividerHeight="1dp" />
 </LinearLayout>
