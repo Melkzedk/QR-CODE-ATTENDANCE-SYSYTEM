@@ -1,36 +1,31 @@
-// ViewAttendanceActivity.java
 package com.example.finalyearproject;
 
-import android.Manifest;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.google.firebase.database.*;
 
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.util.*;
 
 public class ViewAttendanceActivity extends AppCompatActivity {
-
-    private static final int REQUEST_STORAGE_PERMISSION = 1;
 
     private ListView attendanceListView;
     private Spinner courseFilterSpinner;
@@ -72,6 +67,7 @@ public class ViewAttendanceActivity extends AppCompatActivity {
             return;
         }
 
+        // Load students, courses, and sessions
         loadStudentNames(() -> {
             loadCourses();
             courseFilterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -86,11 +82,12 @@ public class ViewAttendanceActivity extends AppCompatActivity {
             });
         });
 
+        // Export button
         exportBtn.setOnClickListener(v -> {
-            if (checkStoragePermission()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 exportToExcel();
             } else {
-                requestStoragePermission();
+                Toast.makeText(this, "Export not supported on Android versions < 10", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -158,9 +155,9 @@ public class ViewAttendanceActivity extends AppCompatActivity {
                             if (!attendeesSnap.exists()) continue;
 
                             StringBuilder sessionText = new StringBuilder();
-                            sessionText.append("\uD83D\uDCC5 ").append(date)
-                                    .append("\n\uD83D\uDCD8 Course: ").append(courseCode)
-                                    .append("\n\uD83D\uDC65 Students:");
+                            sessionText.append("📅 ").append(date)
+                                    .append("\n📘 Course: ").append(courseCode)
+                                    .append("\n👥 Students:");
 
                             for (DataSnapshot regSnap : attendeesSnap.getChildren()) {
                                 String reg = regSnap.getKey();
@@ -185,49 +182,49 @@ public class ViewAttendanceActivity extends AppCompatActivity {
                 });
     }
 
-    private boolean checkStoragePermission() {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void requestStoragePermission() {
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                REQUEST_STORAGE_PERMISSION);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_STORAGE_PERMISSION && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            exportToExcel();
-        } else {
-            Toast.makeText(this, "Permission denied. Cannot export file.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     private void exportToExcel() {
-        try {
-            Workbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Attendance Report");
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Attendance Report");
 
-            int rowIndex = 0;
-            for (String entry : attendanceData) {
-                Row row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue(entry);
+        int rowIndex = 0;
+        for (String entry : attendanceData) {
+            Row row = sheet.createRow(rowIndex++);
+            row.createCell(0).setCellValue(entry);
+        }
+
+        try {
+            String fileName = "attendance_report_" + System.currentTimeMillis() + ".xlsx";
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Downloads.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            values.put(MediaStore.Downloads.IS_PENDING, 1);
+
+            ContentResolver resolver = getContentResolver();
+            Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+            Uri fileUri = resolver.insert(collection, values);
+
+            if (fileUri == null) {
+                Toast.makeText(this, "Failed to create file", Toast.LENGTH_SHORT).show();
+                return;
             }
 
-            File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File file = new File(downloadsDir, "attendance_report.xlsx");
-            FileOutputStream out = new FileOutputStream(file);
-            workbook.write(out);
-            out.close();
-            workbook.close();
+            try (ParcelFileDescriptor pfd = resolver.openFileDescriptor(fileUri, "w");
+                 FileOutputStream out = new FileOutputStream(pfd.getFileDescriptor())) {
 
-            Toast.makeText(this, "Exported successfully to: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                workbook.write(out);
+                workbook.close();
+
+                values.clear();
+                values.put(MediaStore.Downloads.IS_PENDING, 0);
+                resolver.update(fileUri, values, null, null);
+
+                Toast.makeText(this, "✅ Exported to Downloads", Toast.LENGTH_LONG).show();
+            }
+
         } catch (Exception e) {
-            Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            Log.e("EXPORT_ERROR", e.getMessage());
+            Toast.makeText(this, "❌ Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("EXPORT_ERROR", "Error exporting Excel", e);
         }
     }
 }
