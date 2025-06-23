@@ -1,3 +1,4 @@
+// ✅ Updated LoginActivity.java
 package com.example.finalyearproject;
 
 import android.content.Intent;
@@ -46,16 +47,13 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // Admin login
             if (reg.equalsIgnoreCase("admin") && pass.equals("admin123")) {
-                saveSession("admin", "admin");
-                Toast.makeText(this, "Admin login successful", Toast.LENGTH_SHORT).show();
+                saveSession("admin", "admin", "admin");
                 startActivity(new Intent(this, AdminDashboardActivity.class));
                 finish();
                 return;
             }
 
-            // Check Lecturers
             usersRef.child("Lecturers").orderByChild("id").equalTo(reg)
                     .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
@@ -64,8 +62,7 @@ public class LoginActivity extends AppCompatActivity {
                                 for (DataSnapshot data : snapshot.getChildren()) {
                                     String dbPass = data.child("password").getValue(String.class);
                                     if (dbPass != null && dbPass.equals(pass)) {
-                                        saveSession("lecturer", reg);
-                                        Toast.makeText(LoginActivity.this, "Lecturer login successful", Toast.LENGTH_SHORT).show();
+                                        saveSession("lecturer", reg, reg);
                                         startActivity(new Intent(LoginActivity.this, LecturerDashboardActivity.class));
                                         finish();
                                         return;
@@ -73,23 +70,20 @@ public class LoginActivity extends AppCompatActivity {
                                 }
                                 Toast.makeText(LoginActivity.this, "Wrong password for lecturer", Toast.LENGTH_SHORT).show();
                             } else {
-                                // First try FirebaseAuth for self-registered students
                                 String authEmail = reg + "@qrcode.edu";
-
                                 mAuth.signInWithEmailAndPassword(authEmail, pass)
                                         .addOnCompleteListener(task -> {
                                             if (task.isSuccessful()) {
                                                 FirebaseUser user = mAuth.getCurrentUser();
                                                 if (user != null) {
                                                     String uid = user.getUid();
-
                                                     usersRef.child("Students").child(uid)
                                                             .addListenerForSingleValueEvent(new ValueEventListener() {
                                                                 @Override
                                                                 public void onDataChange(@NonNull DataSnapshot userSnap) {
                                                                     if (userSnap.exists()) {
-                                                                        saveSession("student", uid);
-                                                                        Toast.makeText(LoginActivity.this, "Student login successful", Toast.LENGTH_SHORT).show();
+                                                                        String regNumber = userSnap.child("regNumber").getValue(String.class);
+                                                                        saveSession("student", uid, regNumber);
                                                                         startActivity(new Intent(LoginActivity.this, StudentDashboardActivity.class));
                                                                         finish();
                                                                     } else {
@@ -104,7 +98,6 @@ public class LoginActivity extends AppCompatActivity {
                                                             });
                                                 }
                                             } else {
-                                                // If FirebaseAuth fails, try admin-added student login via database
                                                 usersRef.child("Students").orderByChild("regNumber").equalTo(reg)
                                                         .addListenerForSingleValueEvent(new ValueEventListener() {
                                                             @Override
@@ -113,9 +106,8 @@ public class LoginActivity extends AppCompatActivity {
                                                                     for (DataSnapshot data : snapshot.getChildren()) {
                                                                         String dbPass = data.child("password").getValue(String.class);
                                                                         if (dbPass != null && dbPass.equals(pass)) {
-                                                                            String studentId = data.getKey(); // This is the random key
-                                                                            saveSession("student", studentId);
-                                                                            Toast.makeText(LoginActivity.this, "Student login successful", Toast.LENGTH_SHORT).show();
+                                                                            String studentId = data.getKey();
+                                                                            saveSession("student", studentId, reg);
                                                                             startActivity(new Intent(LoginActivity.this, StudentDashboardActivity.class));
                                                                             finish();
                                                                             return;
@@ -150,11 +142,12 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void saveSession(String userType, String id) {
+    private void saveSession(String userType, String userId, String regNumber) {
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         prefs.edit()
                 .putString("userType", userType)
-                .putString("userId", id)
+                .putString("userId", userId)
+                .putString("regNumber", regNumber)
                 .apply();
     }
 }
