@@ -19,8 +19,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.database.*;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileOutputStream;
 import java.util.*;
@@ -67,7 +67,6 @@ public class ViewAttendanceActivity extends AppCompatActivity {
             return;
         }
 
-        // Load students, courses, and sessions
         loadStudentNames(() -> {
             loadCourses();
             courseFilterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -82,7 +81,6 @@ public class ViewAttendanceActivity extends AppCompatActivity {
             });
         });
 
-        // Export button
         exportBtn.setOnClickListener(v -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 exportToExcel();
@@ -184,28 +182,29 @@ public class ViewAttendanceActivity extends AppCompatActivity {
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void exportToExcel() {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Attendance Report");
-
-        int rowIndex = 0;
-        for (String entry : attendanceData) {
-            Row row = sheet.createRow(rowIndex++);
-            row.createCell(0).setCellValue(entry);
-        }
-
         try {
-            String fileName = "attendance_report_" + System.currentTimeMillis() + ".xlsx";
+            Workbook workbook = new HSSFWorkbook(); // safer for Android (poi-android)
+            Sheet sheet = workbook.createSheet("Attendance Report");
+
+            int rowIndex = 0;
+            for (String entry : attendanceData) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(entry);
+            }
+
+            String fileName = "attendance_report_" + System.currentTimeMillis() + ".xls";
+
             ContentValues values = new ContentValues();
-            values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
-            values.put(MediaStore.Downloads.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            values.put(MediaStore.Downloads.IS_PENDING, 1);
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+            values.put(MediaStore.MediaColumns.MIME_TYPE, "application/vnd.ms-excel");
+            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
 
             ContentResolver resolver = getContentResolver();
             Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
             Uri fileUri = resolver.insert(collection, values);
 
             if (fileUri == null) {
-                Toast.makeText(this, "Failed to create file", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "❌ Failed to create file", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -216,7 +215,7 @@ public class ViewAttendanceActivity extends AppCompatActivity {
                 workbook.close();
 
                 values.clear();
-                values.put(MediaStore.Downloads.IS_PENDING, 0);
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0);
                 resolver.update(fileUri, values, null, null);
 
                 Toast.makeText(this, "✅ Exported to Downloads", Toast.LENGTH_LONG).show();
@@ -224,7 +223,7 @@ public class ViewAttendanceActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             Toast.makeText(this, "❌ Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            Log.e("EXPORT_ERROR", "Error exporting Excel", e);
+            Log.e("EXPORT_ERROR", "Excel export failed", e);
         }
     }
 }
