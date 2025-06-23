@@ -4,8 +4,10 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.util.Log;
-import android.view.View;
-import android.widget.*;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -16,147 +18,78 @@ import java.util.Date;
 
 public class ViewAttendanceActivity extends AppCompatActivity {
 
-    private Spinner courseSpinner;
     private ListView attendanceListView;
+    private ArrayAdapter<String> adapter;
+    private ArrayList<String> attendanceData;
     private DatabaseReference dbRef;
-
-    private ArrayList<String> courseList = new ArrayList<>();
-    private ArrayAdapter<String> courseAdapter;
-
-    private ArrayList<String> attendanceList = new ArrayList<>();
-    private ArrayAdapter<String> attendanceAdapter;
-
-    private String studentId = "";
-    private String regNumber = "";
+    private String lecturerId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_attendance);
 
-        courseSpinner = findViewById(R.id.courseSpinner);
         attendanceListView = findViewById(R.id.attendanceListView);
+        attendanceData = new ArrayList<>();
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, attendanceData);
+        attendanceListView.setAdapter(adapter);
+
         dbRef = FirebaseDatabase.getInstance().getReference();
 
-        // ✅ Read session from correct preferences
+        // 🔑 Get lecturer ID from SharedPreferences
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        studentId = prefs.getString("userId", "");
+        lecturerId = prefs.getString("userId", null);
 
-        if (studentId.isEmpty()) {
-            Toast.makeText(this, "Student not logged in", Toast.LENGTH_SHORT).show();
+        if (lecturerId == null) {
+            Toast.makeText(this, "Lecturer not logged in", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        courseAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, courseList);
-        courseAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        courseSpinner.setAdapter(courseAdapter);
-
-        attendanceAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, attendanceList);
-        attendanceListView.setAdapter(attendanceAdapter);
-
-        // Step 1: Load student regNumber first
-        dbRef.child("Users").child("Students").child(studentId)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        regNumber = snapshot.child("regNumber").getValue(String.class);
-                        Log.d("DEBUG_REG", "regNumber = " + regNumber);
-
-                        if (regNumber == null || regNumber.isEmpty()) {
-                            Toast.makeText(ViewAttendanceActivity.this, "Reg number not found", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-
-                        loadCourses(); // Only load courses after regNumber is available
-
-                        courseSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                            @Override
-                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                                String selectedCourse = courseList.get(position);
-                                if (!selectedCourse.startsWith("⚠️")) {
-                                    loadAttendanceSessions(selectedCourse);
-                                }
-                            }
-
-                            @Override
-                            public void onNothingSelected(AdapterView<?> parent) {
-                                attendanceList.clear();
-                                attendanceAdapter.notifyDataSetChanged();
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(ViewAttendanceActivity.this, "Error loading student info", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        loadLecturerSessions();
     }
 
-    private void loadCourses() {
-        dbRef.child("Courses").addListenerForSingleValueEvent(new ValueEventListener() { // ✅ Capital C
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                courseList.clear();
-
-                Log.d("DEBUG_COURSE", "Courses found: " + snapshot.getChildrenCount());
-
-                for (DataSnapshot snap : snapshot.getChildren()) {
-                    String courseCode = snap.child("courseCode").getValue(String.class);
-                    Log.d("DEBUG_COURSE", "Found course: " + courseCode);
-
-                    if (courseCode != null) {
-                        courseList.add(courseCode);
-                    }
-                }
-
-                if (courseList.isEmpty()) {
-                    courseList.add("⚠️ No courses found");
-                }
-
-                courseAdapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("DEBUG_COURSE", "Failed to load courses: " + error.getMessage());
-                Toast.makeText(ViewAttendanceActivity.this, "Failed to load courses", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void loadAttendanceSessions(String courseCode) {
+    private void loadLecturerSessions() {
         dbRef.child("attendance_sessions")
-                .orderByChild("courseCode")
-                .equalTo(courseCode)
+                .orderByChild("lecturerId")
+                .equalTo(lecturerId)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        attendanceList.clear();
+                        attendanceData.clear();
 
                         for (DataSnapshot sessionSnap : snapshot.getChildren()) {
-                            if (sessionSnap.hasChild("attendees") &&
-                                    sessionSnap.child("attendees").hasChild(regNumber)) {
+                            String courseCode = sessionSnap.child("courseCode").getValue(String.class);
+                            Long timestamp = sessionSnap.child("timestamp").getValue(Long.class);
+                            String date = (timestamp != null) ?
+                                    DateFormat.format("dd MMM yyyy", new Date(timestamp)).toString() :
+                                    "Unknown Date";
 
-                                Long timestamp = sessionSnap.child("timestamp").getValue(Long.class);
-                                String date = (timestamp != null)
-                                        ? DateFormat.format("dd MMM yyyy, HH:mm", new Date(timestamp)).toString()
-                                        : "Unknown Date";
+                            DataSnapshot attendeesSnap = sessionSnap.child("attendees");
+                            if (!attendeesSnap.exists()) continue;
 
-                                attendanceList.add("📅 " + date + " | ✅ Present");
+                            StringBuilder sessionText = new StringBuilder();
+                            sessionText.append("📅 ").append(date)
+                                    .append("\n📘 Course: ").append(courseCode)
+                                    .append("\n👥 Students:");
+
+                            for (DataSnapshot regSnap : attendeesSnap.getChildren()) {
+                                sessionText.append("\n   - ").append(regSnap.getKey());
                             }
+
+                            attendanceData.add(sessionText.toString());
                         }
 
-                        if (attendanceList.isEmpty()) {
-                            attendanceList.add("❌ No attendance records found for this course.");
+                        if (attendanceData.isEmpty()) {
+                            attendanceData.add("No attendance records found.");
                         }
 
-                        attendanceAdapter.notifyDataSetChanged();
+                        adapter.notifyDataSetChanged();
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(ViewAttendanceActivity.this, "Error loading attendance", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ViewAttendanceActivity.this, "Failed to load data", Toast.LENGTH_SHORT).show();
+                        Log.e("FIREBASE_ERROR", error.getMessage());
                     }
                 });
     }
