@@ -1,7 +1,12 @@
+// ViewAttendanceActivity.java
 package com.example.finalyearproject;
 
+import android.Manifest;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
@@ -9,10 +14,14 @@ import android.widget.*;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.database.*;
 
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
@@ -20,6 +29,8 @@ import java.io.FileOutputStream;
 import java.util.*;
 
 public class ViewAttendanceActivity extends AppCompatActivity {
+
+    private static final int REQUEST_STORAGE_PERMISSION = 1;
 
     private ListView attendanceListView;
     private Spinner courseFilterSpinner;
@@ -61,7 +72,6 @@ public class ViewAttendanceActivity extends AppCompatActivity {
             return;
         }
 
-        // Load students, courses, and sessions
         loadStudentNames(() -> {
             loadCourses();
             courseFilterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -76,8 +86,13 @@ public class ViewAttendanceActivity extends AppCompatActivity {
             });
         });
 
-        // Export to Excel when button is clicked
-        exportBtn.setOnClickListener(v -> exportToExcel());
+        exportBtn.setOnClickListener(v -> {
+            if (checkStoragePermission()) {
+                exportToExcel();
+            } else {
+                requestStoragePermission();
+            }
+        });
     }
 
     private void loadStudentNames(Runnable callback) {
@@ -143,9 +158,9 @@ public class ViewAttendanceActivity extends AppCompatActivity {
                             if (!attendeesSnap.exists()) continue;
 
                             StringBuilder sessionText = new StringBuilder();
-                            sessionText.append("📅 ").append(date)
-                                    .append("\n📘 Course: ").append(courseCode)
-                                    .append("\n👥 Students:");
+                            sessionText.append("\uD83D\uDCC5 ").append(date)
+                                    .append("\n\uD83D\uDCD8 Course: ").append(courseCode)
+                                    .append("\n\uD83D\uDC65 Students:");
 
                             for (DataSnapshot regSnap : attendeesSnap.getChildren()) {
                                 String reg = regSnap.getKey();
@@ -170,6 +185,27 @@ public class ViewAttendanceActivity extends AppCompatActivity {
                 });
     }
 
+    private boolean checkStoragePermission() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestStoragePermission() {
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                REQUEST_STORAGE_PERMISSION);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_STORAGE_PERMISSION && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            exportToExcel();
+        } else {
+            Toast.makeText(this, "Permission denied. Cannot export file.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void exportToExcel() {
         try {
             Workbook workbook = new XSSFWorkbook();
@@ -181,13 +217,14 @@ public class ViewAttendanceActivity extends AppCompatActivity {
                 row.createCell(0).setCellValue(entry);
             }
 
-            File file = new File(getExternalFilesDir(null), "attendance_report.xlsx");
+            File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File file = new File(downloadsDir, "attendance_report.xlsx");
             FileOutputStream out = new FileOutputStream(file);
             workbook.write(out);
             out.close();
             workbook.close();
 
-            Toast.makeText(this, "Exported to " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Exported successfully to: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             Log.e("EXPORT_ERROR", e.getMessage());
