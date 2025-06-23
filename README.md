@@ -131,4 +131,29 @@ For any queries or suggestions:
 📧 [melkywafula29@gmail.com](mailto:melkywafula29@gmail.com)
 📱 +254-746365629
 
+
+Screenshots
+## 📸 Screenshots
+
+### 🔹 Home Screen
+![Home](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.51_e591e294.jpg)
+
+### 🔹 Attendance QR
+![QR](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.51_b1e70a25.jpg)
+
+### 🔹 Location Prompt
+![Location](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.52_5697a898.jpg)
+
+### 🔹 Camera Preview
+![Camera](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.52_a34a7b2e.jpg)
+
+### 🔹 Scanning QR
+![Scanning](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.53_a6cab187.jpg)
+
+### 🔹 Attendance Confirmation
+![Confirmation](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.53_836e004b.jpg)
+
+### 🔹 Dashboard
+![Dashboard](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.52_24039e05.jpg)
+
 ---
