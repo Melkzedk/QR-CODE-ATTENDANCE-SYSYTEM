@@ -1,5 +1,3 @@
-// Replace your entire DownloadReportActivity.java content with this:
-
 package com.example.finalyearproject;
 
 import android.graphics.Canvas;
@@ -13,11 +11,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook; // ✅ HSSF for .xls
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,9 +23,8 @@ import java.util.*;
 public class DownloadReportActivity extends AppCompatActivity {
 
     private Button downloadPdfBtn, downloadExcelBtn;
-    private FirebaseAuth mAuth;
     private DatabaseReference attendanceRef;
-    private String studentId;
+    private String regNumber;
     private Map<String, List<String>> attendanceData = new HashMap<>();
 
     @Override
@@ -39,13 +35,11 @@ public class DownloadReportActivity extends AppCompatActivity {
         downloadPdfBtn = findViewById(R.id.downloadPdfBtn);
         downloadExcelBtn = findViewById(R.id.downloadExcelBtn);
 
-        mAuth = FirebaseAuth.getInstance();
-        studentId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
+        regNumber = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("userId", null);
+        attendanceRef = FirebaseDatabase.getInstance().getReference("attendance_sessions");
 
-        attendanceRef = FirebaseDatabase.getInstance().getReference("Attendance");
-
-        if (studentId == null) {
-            Toast.makeText(this, "User not authenticated", Toast.LENGTH_SHORT).show();
+        if (regNumber == null || regNumber.isEmpty()) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -60,18 +54,23 @@ public class DownloadReportActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 attendanceData.clear();
-                for (DataSnapshot courseSnap : snapshot.getChildren()) {
-                    String courseCode = courseSnap.getKey();
-                    List<String> timestamps = new ArrayList<>();
 
-                    for (DataSnapshot dateSnap : courseSnap.getChildren()) {
-                        if (dateSnap.child(studentId).getValue(Boolean.class) != null) {
-                            timestamps.add(dateSnap.getKey());
+                for (DataSnapshot sessionSnap : snapshot.getChildren()) {
+                    String courseCode = sessionSnap.child("courseCode").getValue(String.class);
+                    Long timestamp = sessionSnap.child("timestamp").getValue(Long.class);
+
+                    if (courseCode != null && timestamp != null) {
+                        DataSnapshot attendees = sessionSnap.child("attendees");
+
+                        if (attendees.hasChild(regNumber) && attendees.child(regNumber).getValue(Boolean.class)) {
+                            String readableTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm")
+                                    .format(new Date(timestamp));
+
+                            if (!attendanceData.containsKey(courseCode)) {
+                                attendanceData.put(courseCode, new ArrayList<>());
+                            }
+                            attendanceData.get(courseCode).add(readableTime);
                         }
-                    }
-
-                    if (!timestamps.isEmpty()) {
-                        attendanceData.put(courseCode, timestamps);
                     }
                 }
 
@@ -115,14 +114,14 @@ public class DownloadReportActivity extends AppCompatActivity {
 
         try {
             File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            if (!downloadsDir.exists()) {
-                downloadsDir.mkdirs();
-            }
+            if (!downloadsDir.exists()) downloadsDir.mkdirs();
+
             File file = new File(downloadsDir, "Attendance_Report.pdf");
             FileOutputStream fos = new FileOutputStream(file);
             pdf.writeTo(fos);
             fos.close();
-            Toast.makeText(this, "PDF saved to Downloads: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+
+            Toast.makeText(this, "PDF saved to Downloads:\n" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Failed to save PDF", Toast.LENGTH_SHORT).show();
@@ -132,7 +131,7 @@ public class DownloadReportActivity extends AppCompatActivity {
     }
 
     private void generateExcelReport() {
-        Workbook workbook = new XSSFWorkbook();
+        Workbook workbook = new HSSFWorkbook(); // ✅ Use HSSFWorkbook for .xls
         Sheet sheet = workbook.createSheet("Attendance");
 
         int rowIndex = 0;
@@ -150,15 +149,15 @@ public class DownloadReportActivity extends AppCompatActivity {
 
         try {
             File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            if (!downloadsDir.exists()) {
-                downloadsDir.mkdirs();
-            }
-            File file = new File(downloadsDir, "Attendance_Report.xlsx");
+            if (!downloadsDir.exists()) downloadsDir.mkdirs();
+
+            File file = new File(downloadsDir, "Attendance_Report.xls"); // ✅ Save as .xls
             FileOutputStream outputStream = new FileOutputStream(file);
             workbook.write(outputStream);
             outputStream.close();
             workbook.close();
-            Toast.makeText(this, "Excel saved to Downloads: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+
+            Toast.makeText(this, "Excel saved to Downloads:\n" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Failed to save Excel", Toast.LENGTH_SHORT).show();
