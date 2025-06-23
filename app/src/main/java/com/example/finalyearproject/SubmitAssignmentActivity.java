@@ -33,9 +33,9 @@ public class SubmitAssignmentActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_submit_assignment);
 
-        // ✅ Load regNumber from SharedPreferences
+        // ✅ Load regNumber (actually userId) from SharedPreferences
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        regNumber = prefs.getString("regNumber", null);
+        regNumber = prefs.getString("userId", null);  // fixed from "regNumber" to "userId"
 
         if (regNumber == null || regNumber.isEmpty()) {
             Toast.makeText(this, "User not logged in. Missing regNumber.", Toast.LENGTH_LONG).show();
@@ -94,14 +94,15 @@ public class SubmitAssignmentActivity extends AppCompatActivity {
                         String downloadUrl = uri.toString();
                         Toast.makeText(this, "Upload successful!", Toast.LENGTH_SHORT).show();
 
-                        // Save to Realtime Database
+                        // ✅ Save to Realtime Database
                         DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference("submissions");
+
                         Map<String, Object> fileData = new HashMap<>();
                         fileData.put("fileUrl", downloadUrl);
                         fileData.put("fileName", fileUri.getLastPathSegment());
                         fileData.put("timestamp", timestamp);
 
-                        dbRef.child(regNumber).setValue(fileData)
+                        dbRef.child(regNumber).push().setValue(fileData) // push to allow multiple uploads
                                 .addOnCompleteListener(task -> {
                                     if (task.isSuccessful()) {
                                         Toast.makeText(this, "File saved in DB!", Toast.LENGTH_SHORT).show();
