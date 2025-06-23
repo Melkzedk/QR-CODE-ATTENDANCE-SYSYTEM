@@ -46,7 +46,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
     NavigationView navigationView;
     Toolbar toolbar;
 
-    String regNumber;
+    String uid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,9 +54,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userType = prefs.getString("userType", null);
-        regNumber = prefs.getString("userId", null);
+        uid = prefs.getString("userId", null); // This is the UID
 
-        if (userType == null || !userType.equals("student") || regNumber == null || regNumber.isEmpty()) {
+        if (userType == null || !userType.equals("student") || uid == null || uid.isEmpty()) {
             Toast.makeText(this, "Session expired. Please login again.", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, LoginActivity.class));
             finish();
@@ -130,7 +130,28 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
 
             String courseCode = displayToCodeMap.get(selectedDisplay);
-            fetchAttendancePercentage(courseCode);
+
+            // 🔄 Fetch regNumber before calculating attendance
+            usersRef.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        String regNumber = snapshot.child("regNumber").getValue(String.class);
+                        if (regNumber != null) {
+                            fetchAttendancePercentage(courseCode, regNumber);
+                        } else {
+                            Toast.makeText(StudentDashboardActivity.this, "RegNumber not found for user", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(StudentDashboardActivity.this, "Student record not found", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Toast.makeText(StudentDashboardActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         setupNavigation();
@@ -163,7 +184,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
         });
     }
 
-    private void fetchAttendancePercentage(String courseCode) {
+    private void fetchAttendancePercentage(String courseCode, String regNumber) {
         DatabaseReference sessionRef = FirebaseDatabase.getInstance().getReference("attendance_sessions");
 
         sessionRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -206,34 +227,31 @@ public class StudentDashboardActivity extends AppCompatActivity {
     }
 
     private void loadProfileHeader() {
-        usersRef.orderByChild("regNumber").equalTo(regNumber)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.exists()) {
-                            for (DataSnapshot student : snapshot.getChildren()) {
-                                String name = student.child("name").getValue(String.class);
-                                String email = student.child("email").getValue(String.class);
+        usersRef.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String name = snapshot.child("name").getValue(String.class);
+                    String email = snapshot.child("email").getValue(String.class);
 
-                                View headerView = navigationView.getHeaderView(0);
-                                TextView profileName = headerView.findViewById(R.id.profileName);
-                                TextView profileEmail = headerView.findViewById(R.id.profileEmail);
-                                ImageView profileImage = headerView.findViewById(R.id.profileImage);
+                    View headerView = navigationView.getHeaderView(0);
+                    TextView profileName = headerView.findViewById(R.id.profileName);
+                    TextView profileEmail = headerView.findViewById(R.id.profileEmail);
+                    ImageView profileImage = headerView.findViewById(R.id.profileImage);
 
-                                profileName.setText(name != null ? name : "Student");
-                                profileEmail.setText(email != null ? email : "");
+                    profileName.setText(name != null ? name : "Student");
+                    profileEmail.setText(email != null ? email : "");
 
-                                profileImage.setOnClickListener(v ->
-                                        Toast.makeText(StudentDashboardActivity.this, "Image picker not yet implemented", Toast.LENGTH_SHORT).show());
-                            }
-                        }
-                    }
+                    profileImage.setOnClickListener(v ->
+                            Toast.makeText(StudentDashboardActivity.this, "Image picker not yet implemented", Toast.LENGTH_SHORT).show());
+                }
+            }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(StudentDashboardActivity.this, "Error loading profile info", Toast.LENGTH_SHORT).show();
-                    }
-                });
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(StudentDashboardActivity.this, "Error loading profile info", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupNavigation() {
@@ -248,7 +266,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
                     } else {
                         Intent intent = new Intent(this, QRScannerActivity.class);
                         intent.putExtra("subject", selected);
-                        intent.putExtra("regNumber", regNumber);
+                        intent.putExtra("regNumber", uid); // UID used in scanner
                         startActivity(intent);
                     }
                 } else if (itemId == R.id.nav_attendance_history) {
