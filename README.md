@@ -134,9 +134,10 @@ For any queries or suggestions:
 
 Screenshots
 ## 📸 Screenshots
+## 📸 Screenshots
 
 ### 🔹 Home Screen
-![Home](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.51_e591e294.jpg)
+![Home Screen](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.51_e591e294.jpg)
 
 ### 🔹 Attendance QR
 ![QR](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.51_b1e70a25.jpg)
@@ -155,5 +156,6 @@ Screenshots
 
 ### 🔹 Dashboard
 ![Dashboard](https://raw.githubusercontent.com/Melkzedk/QR-CODE-ATTENDANCE-SYSYTEM/9a6bc6f57cc2670ae313de4bf6880b18722ac47d/Screenshots/WhatsApp%20Image%202025-06-23%20at%2012.22.52_24039e05.jpg)
+
 
 ---
