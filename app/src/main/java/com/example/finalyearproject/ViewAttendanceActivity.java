@@ -1,5 +1,6 @@
 package com.example.finalyearproject;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.util.Log;
@@ -18,10 +19,15 @@ public class ViewAttendanceActivity extends AppCompatActivity {
     private Spinner courseSpinner;
     private ListView attendanceListView;
     private DatabaseReference dbRef;
+
     private ArrayList<String> courseList = new ArrayList<>();
     private ArrayAdapter<String> courseAdapter;
+
     private ArrayList<String> attendanceList = new ArrayList<>();
     private ArrayAdapter<String> attendanceAdapter;
+
+    private String studentId = "";
+    private String regNumber = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +36,16 @@ public class ViewAttendanceActivity extends AppCompatActivity {
 
         courseSpinner = findViewById(R.id.courseSpinner);
         attendanceListView = findViewById(R.id.attendanceListView);
-
         dbRef = FirebaseDatabase.getInstance().getReference();
+
+        // ✅ Read session from correct preferences
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        studentId = prefs.getString("userId", "");
+
+        if (studentId.isEmpty()) {
+            Toast.makeText(this, "Student not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         courseAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, courseList);
         courseAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -40,39 +54,72 @@ public class ViewAttendanceActivity extends AppCompatActivity {
         attendanceAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, attendanceList);
         attendanceListView.setAdapter(attendanceAdapter);
 
-        loadCourses();
+        // Step 1: Load student regNumber first
+        dbRef.child("Users").child("Students").child(studentId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        regNumber = snapshot.child("regNumber").getValue(String.class);
+                        Log.d("DEBUG_REG", "regNumber = " + regNumber);
 
-        courseSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String selectedCourse = courseList.get(position);
-                loadAttendanceSessions(selectedCourse);
-            }
+                        if (regNumber == null || regNumber.isEmpty()) {
+                            Toast.makeText(ViewAttendanceActivity.this, "Reg number not found", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                attendanceList.clear();
-                attendanceAdapter.notifyDataSetChanged();
-            }
-        });
+                        loadCourses(); // Only load courses after regNumber is available
+
+                        courseSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                String selectedCourse = courseList.get(position);
+                                if (!selectedCourse.startsWith("⚠️")) {
+                                    loadAttendanceSessions(selectedCourse);
+                                }
+                            }
+
+                            @Override
+                            public void onNothingSelected(AdapterView<?> parent) {
+                                attendanceList.clear();
+                                attendanceAdapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(ViewAttendanceActivity.this, "Error loading student info", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void loadCourses() {
-        dbRef.child("courses").addListenerForSingleValueEvent(new ValueEventListener() {
+        dbRef.child("Courses").addListenerForSingleValueEvent(new ValueEventListener() { // ✅ Capital C
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 courseList.clear();
+
+                Log.d("DEBUG_COURSE", "Courses found: " + snapshot.getChildrenCount());
+
                 for (DataSnapshot snap : snapshot.getChildren()) {
                     String courseCode = snap.child("courseCode").getValue(String.class);
+                    Log.d("DEBUG_COURSE", "Found course: " + courseCode);
+
                     if (courseCode != null) {
                         courseList.add(courseCode);
                     }
                 }
+
+                if (courseList.isEmpty()) {
+                    courseList.add("⚠️ No courses found");
+                }
+
                 courseAdapter.notifyDataSetChanged();
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("DEBUG_COURSE", "Failed to load courses: " + error.getMessage());
                 Toast.makeText(ViewAttendanceActivity.this, "Failed to load courses", Toast.LENGTH_SHORT).show();
             }
         });
@@ -88,23 +135,20 @@ public class ViewAttendanceActivity extends AppCompatActivity {
                         attendanceList.clear();
 
                         for (DataSnapshot sessionSnap : snapshot.getChildren()) {
-                            Long timestamp = null;
-                            try {
-                                timestamp = sessionSnap.child("timestamp").getValue(Long.class);
-                            } catch (Exception e) {
-                                Log.e("AttendanceSession", "Invalid timestamp in: " + sessionSnap.getKey(), e);
+                            if (sessionSnap.hasChild("attendees") &&
+                                    sessionSnap.child("attendees").hasChild(regNumber)) {
+
+                                Long timestamp = sessionSnap.child("timestamp").getValue(Long.class);
+                                String date = (timestamp != null)
+                                        ? DateFormat.format("dd MMM yyyy, HH:mm", new Date(timestamp)).toString()
+                                        : "Unknown Date";
+
+                                attendanceList.add("📅 " + date + " | ✅ Present");
                             }
+                        }
 
-                            String date = (timestamp != null)
-                                    ? DateFormat.format("dd MMM yyyy", new Date(timestamp)).toString()
-                                    : "Unknown Date";
-
-                            int count = 0;
-                            if (sessionSnap.hasChild("attendees")) {
-                                count = (int) sessionSnap.child("attendees").getChildrenCount();
-                            }
-
-                            attendanceList.add("📅 " + date + " | 👥 Students Present: " + count);
+                        if (attendanceList.isEmpty()) {
+                            attendanceList.add("❌ No attendance records found for this course.");
                         }
 
                         attendanceAdapter.notifyDataSetChanged();
@@ -112,7 +156,7 @@ public class ViewAttendanceActivity extends AppCompatActivity {
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(ViewAttendanceActivity.this, "Error loading attendance sessions", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ViewAttendanceActivity.this, "Error loading attendance", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
