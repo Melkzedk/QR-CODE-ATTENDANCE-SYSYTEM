@@ -35,7 +35,7 @@ public class AddStudentActivity extends AppCompatActivity {
         addStudentBtn = findViewById(R.id.addStudentBtn);
 
         mAuth = FirebaseAuth.getInstance();
-        studentsRef = FirebaseDatabase.getInstance().getReference("User").child("Students");
+        studentsRef = FirebaseDatabase.getInstance().getReference("Users").child("Students");
 
         addStudentBtn.setOnClickListener(v -> {
             String name = studentName.getText().toString().trim();
