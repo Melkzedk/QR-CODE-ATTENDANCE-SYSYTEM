@@ -47,7 +47,7 @@ public class AddStudentActivity extends AppCompatActivity {
 
             if (TextUtils.isEmpty(name) || TextUtils.isEmpty(reg) || TextUtils.isEmpty(email)
                     || TextUtils.isEmpty(dept) || TextUtils.isEmpty(course) || TextUtils.isEmpty(password)) {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please fill all field", Toast.LENGTH_SHORT).show();
                 return;
             }
 
