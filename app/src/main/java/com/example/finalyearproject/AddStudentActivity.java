@@ -1,3 +1,4 @@
+//AddStudentActivity.java
 package com.example.finalyearproject;
 
 import android.os.Bundle;
