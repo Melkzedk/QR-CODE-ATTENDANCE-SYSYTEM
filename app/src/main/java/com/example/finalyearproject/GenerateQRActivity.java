@@ -1,3 +1,4 @@
+//Generate QR Code Activity
 package com.example.finalyearproject;
 
 import android.Manifest;
