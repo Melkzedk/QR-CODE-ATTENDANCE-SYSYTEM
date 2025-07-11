@@ -1,3 +1,5 @@
+//Send Message Activity
+
 package com.example.finalyearproject;
 
 import android.os.Bundle;
