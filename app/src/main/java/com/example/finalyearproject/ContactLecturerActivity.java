@@ -1,4 +1,4 @@
-//Contact Lecturer Activity acynnsn
+//Contact Lecturer Activity
 
 package com.example.finalyearproject;
 
