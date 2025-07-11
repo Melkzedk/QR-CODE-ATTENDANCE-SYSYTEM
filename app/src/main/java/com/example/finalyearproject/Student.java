@@ -11,6 +11,8 @@ public class Student {
     public String password;
     public String status;
 
+    public String role;
+
     private String key;  // Add this for Firebase key
 
     public Student() {}
