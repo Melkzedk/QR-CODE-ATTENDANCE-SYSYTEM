@@ -1,3 +1,5 @@
+//Lecturer Dashboard Activity
+
 package com.example.finalyearproject;
 
 import android.Manifest;
