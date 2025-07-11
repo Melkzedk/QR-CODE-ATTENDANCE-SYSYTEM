@@ -1,3 +1,4 @@
+//Submit Assignment Activity
 package com.example.finalyearproject;
 
 import android.app.ProgressDialog;
