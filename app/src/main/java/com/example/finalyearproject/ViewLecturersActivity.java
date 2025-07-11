@@ -17,7 +17,6 @@ public class ViewLecturersActivity extends AppCompatActivity {
 
     ListView lecturerListView;
 
-    ListView lecturerListView;
     ArrayAdapter<String> adapter;
     ArrayList<String> lecturerList;
     DatabaseReference lecturerRef;
