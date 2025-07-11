@@ -1,3 +1,5 @@
+//Contact Lecturer Activity
+
 package com.example.finalyearproject;
 
 import android.os.Bundle;
