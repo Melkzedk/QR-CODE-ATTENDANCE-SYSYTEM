@@ -1,4 +1,4 @@
-// ✅ Updated LoginActivity.java
+// ✅  LoginActivity.java
 package com.example.finalyearproject;
 
 import android.content.Intent;
