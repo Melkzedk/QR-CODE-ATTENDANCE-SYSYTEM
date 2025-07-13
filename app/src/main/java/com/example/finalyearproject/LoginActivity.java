@@ -43,11 +43,11 @@ public class LoginActivity extends AppCompatActivity {
             String pass = loginPassword.getText().toString().trim();
 
             if (reg.isEmpty() || pass.isEmpty()) {
-                Toast.makeText(this, "Please enter all field", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please enter all fields", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            if (reg.equalsIgnoreCase("admin") && pass.equals("admin123")) {
+            if (reg.equalsIgnoreCase("admin") && pass.equals("admin1234")) {
                 saveSession("admin", "admin", "admin");
                 startActivity(new Intent(this, AdminDashboardActivity.class));
                 finish();
