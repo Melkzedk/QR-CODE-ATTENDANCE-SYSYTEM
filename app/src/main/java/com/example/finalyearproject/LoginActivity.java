@@ -43,7 +43,7 @@ public class LoginActivity extends AppCompatActivity {
             String pass = loginPassword.getText().toString().trim();
 
             if (reg.isEmpty() || pass.isEmpty()) {
-                Toast.makeText(this, "Please enter all fields", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please enter all field", Toast.LENGTH_SHORT).show();
                 return;
             }
 
