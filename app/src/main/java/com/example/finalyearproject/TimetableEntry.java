@@ -1,3 +1,4 @@
+//TimeTableEntry Activity
 package com.example.finalyearproject;
 
 public class TimetableEntry {
