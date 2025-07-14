@@ -1,3 +1,5 @@
+//TimeTableAdapter Activity
+
 package com.example.finalyearproject;
 
 import android.view.LayoutInflater;
