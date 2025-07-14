@@ -9,7 +9,7 @@ public class TimetableEntry {
     }
 
     public TimetableEntry(String courseCode, String courseName, String lecturer,
-                          String startTime, String endTime, String location, String day) {
+                          String startTime, String endTime, String location, String day, String status) {
         this.courseCode = courseCode;
         this.courseName = courseName;
         this.lecturer = lecturer;
